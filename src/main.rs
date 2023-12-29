@@ -43,9 +43,8 @@ async fn connect() -> imap::error::Result<Option<String>> {
     imap_session.select("INBOX")?;
 
     let messages = imap_session.fetch("15", "ENVELOPE")?;
-    // let messages = imap_session.fetch("1", "RFC822")?;
-    let message = if let Some(m) = messages.iter().next() {
-        m
+    let message = if let Some(msg) = messages.iter().next() {
+        msg
     } else {
         return Ok(None);
     };
@@ -54,40 +53,27 @@ async fn connect() -> imap::error::Result<Option<String>> {
         .envelope()
         .expect("message did not have an envelope!");
 
-    // let subject = if let Some(subject_bytes) = envelope.subject {
-    //     let decoded_subject = decode(subject_bytes, ParseMode::Robust).unwrap_or_else(|e| {
-    //         eprintln!("Failed to decode subject: {}", e);
-    //         Vec::new() // Return an empty Vec<u8> in case of decoding failure
-    //     });
-    //
-    //     String::from_utf8_lossy(&decoded_subject).to_string()
-    // } else {
-    //     // Handle the case when the subject is None (no subject in the envelope)
-    //     // You can choose to return an empty string or handle it differently based on your requirements.
-    //     String::new()
     let subject = if let Some(subject_bytes) = envelope.subject {
         let decoded_subject = decode(subject_bytes, ParseMode::Robust)
             .map(|v| String::from_utf8_lossy(&v).to_string())
             .unwrap_or_else(|e| {
                 eprintln!("Failed to decode subject: {}", e);
-                String::new() // Return an empty string in case of decoding failure
+                String::new()
             });
 
         // HACK: Who the hell knows why the resulted string has those utf related
         // encoding characters.
         let decoded_subject = decoded_subject
-            .replace("=?UTF-8?Q?", "") // Remove the prefix
-            .replace("?= ", "") // Remove the prefix
-            .replace("_", " "); // Replace underscores with spaces
+            .replace("=?UTF-8?Q?", "")
+            .replace("?= ", "")
+            .replace("_", " ");
 
         decoded_subject
     } else {
         // Handle the case when the subject is None (no subject in the envelope)
-        // You can choose to return an empty string or handle it differently based on your requirements.
         String::new()
     };
 
-    // be nice to the server and log out
     imap_session.logout()?;
 
     Ok(Some(subject))
