@@ -15,6 +15,7 @@ lazy_static = "1.4.0"
 imap = "2.4.1"
 native-tls = "0.2.11"
 tokio = {version = "1.33.0", features = ["full"]}
+quoted_printable = "0.5.0"
 
 [dev-dependencies]
 mockito = "1.2.0"
