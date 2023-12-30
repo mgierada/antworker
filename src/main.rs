@@ -43,22 +43,12 @@ async fn connect() -> imap::error::Result<Option<Vec<String>>> {
     imap_session.select("INBOX")?;
 
     // let messages = imap_session.fetch("RECENT", "ENVELOPE UID")?;
-    let messages = imap_session.fetch("1:*", "ALL")?;
-    println!("messages: {:?}", messages);
-    let message = if let Some(msg) = messages.iter().next() {
-        msg
-    } else {
-        return Ok(None);
-    };
-
-    let envelope = message
-        .envelope()
-        .expect("message did not have an envelope!");
+    let messages = imap_session.fetch("1:2", "ALL")?;
 
     let subjects: Vec<String> = messages
         .iter()
         .filter_map(|msg| {
-            let envelope = msg.envelope()?;
+            let envelope = msg.envelope().expect("message did not have an envelope!");
             let subject = envelope
                 .subject
                 .map(|subject_bytes| {
