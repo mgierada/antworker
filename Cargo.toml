@@ -16,6 +16,7 @@ imap = "2.4.1"
 native-tls = "0.2.11"
 tokio = {version = "1.33.0", features = ["full"]}
 quoted_printable = "0.5.0"
+mailparse = "0.14.0"
 
 [dev-dependencies]
 mockito = "1.2.0"

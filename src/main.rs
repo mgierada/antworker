@@ -1,7 +1,8 @@
 use dotenv::dotenv;
 use lazy_static::lazy_static;
+use mailparse::{self, parse_mail, MailHeaderMap};
 use quoted_printable::{decode, ParseMode};
-use std::env::var;
+use std::{env::var, fs::File, io::Write};
 extern crate imap;
 extern crate native_tls;
 
@@ -43,7 +44,42 @@ async fn connect() -> imap::error::Result<Option<Vec<String>>> {
     imap_session.select("INBOX")?;
 
     // let messages = imap_session.fetch("RECENT", "ENVELOPE UID")?;
-    let messages = imap_session.fetch("1:2", "ALL")?;
+    let messages = imap_session.uid_fetch("23:23", "ALL")?;
+
+    // save attachments
+    for msg in messages.iter() {
+        let uid = msg.uid.unwrap();
+        let message_stream = imap_session.uid_fetch(uid.to_string(), "BODY[]").unwrap();
+        for fetch_result in &message_stream {
+            let body = fetch_result.body().unwrap();
+            // Parse the MIME content
+            let mail = parse_mail(body).unwrap();
+            // Iterate through MIME parts
+            for part in mail.subparts.iter() {
+                let content_type = &part.ctype;
+                println!("content_type: {:?}", content_type);
+                if content_type.mimetype == "image/png"
+                    || content_type.mimetype == "application/pdf"
+                // && content_type.subtype == "octet-stream"
+                {
+                    // Extract the filename from the Content-Type header
+                    let filename = content_type
+                        .params
+                        .get("name")
+                        .cloned()
+                        .unwrap_or_else(|| format!("attachment_{}_unnamed.txt", uid));
+                    // Write the attachment content to a file
+                    let mut file = File::create(filename.clone())
+                        .map_err(|e| eprintln!("Failed to create file: {}", e))
+                        .expect("Failed to create file");
+                    file.write_all(&decode(&part.raw_bytes, ParseMode::Robust).unwrap())
+                        .map_err(|e| eprintln!("Failed to write to file: {}", e))
+                        .expect("Failed to write to file");
+                    println!("Attachment saved to file: {}", filename);
+                }
+            }
+        }
+    }
 
     let subjects: Vec<String> = messages
         .iter()
