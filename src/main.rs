@@ -24,7 +24,7 @@ lazy_static! {
         var("COMPANY_EMAIL_PASSWORD").expect("COMPANY_EMAIL_PASSWORD must be set.");
 }
 
-async fn connect() -> imap::error::Result<Option<String>> {
+async fn connect() -> imap::error::Result<Option<Vec<String>>> {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
     let client = imap::connect(
         (COMPANY_EMAIL_SERVER.to_string(), *COMPANY_EMAIL_PORT),
@@ -42,7 +42,9 @@ async fn connect() -> imap::error::Result<Option<String>> {
 
     imap_session.select("INBOX")?;
 
-    let messages = imap_session.fetch("15", "ENVELOPE")?;
+    // let messages = imap_session.fetch("RECENT", "ENVELOPE UID")?;
+    let messages = imap_session.fetch("1:*", "ALL")?;
+    println!("messages: {:?}", messages);
     let message = if let Some(msg) = messages.iter().next() {
         msg
     } else {
@@ -53,30 +55,29 @@ async fn connect() -> imap::error::Result<Option<String>> {
         .envelope()
         .expect("message did not have an envelope!");
 
-    let subject = if let Some(subject_bytes) = envelope.subject {
-        let decoded_subject = decode(subject_bytes, ParseMode::Robust)
-            .map(|v| String::from_utf8_lossy(&v).to_string())
-            .unwrap_or_else(|e| {
-                eprintln!("Failed to decode subject: {}", e);
-                String::new()
-            });
-
-        // HACK: Who the hell knows why the resulted string has those utf related
-        // encoding characters.
-        let decoded_subject = decoded_subject
-            .replace("=?UTF-8?Q?", "")
-            .replace("?= ", "")
-            .replace("_", " ");
-
-        decoded_subject
-    } else {
-        // Handle the case when the subject is None (no subject in the envelope)
-        String::new()
-    };
-
+    let subjects: Vec<String> = messages
+        .iter()
+        .filter_map(|msg| {
+            let envelope = msg.envelope()?;
+            let subject = envelope
+                .subject
+                .map(|subject_bytes| {
+                    decode(subject_bytes, ParseMode::Robust)
+                        .map(|v| String::from_utf8_lossy(&v).to_string())
+                        .unwrap_or_else(|e| {
+                            eprintln!("Failed to decode subject: {}", e);
+                            String::new()
+                        })
+                        .replace("=?UTF-8?Q?", "")
+                        .replace("?= ", "")
+                        .replace("_", " ")
+                })
+                .unwrap_or_else(|| String::new());
+            Some(subject)
+        })
+        .collect();
     imap_session.logout()?;
-
-    Ok(Some(subject))
+    Ok(Some(subjects))
 }
 
 #[tokio::main]
