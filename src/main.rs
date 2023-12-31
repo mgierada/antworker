@@ -1,6 +1,3 @@
-use base64::{
-    engine::{self, general_purpose},
-};
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 
@@ -48,7 +45,7 @@ async fn connect() -> imap::error::Result<Option<Vec<String>>> {
     imap_session.select("INBOX")?;
 
     // let messages = imap_session.fetch("RECENT", "ENVELOPE UID")?;
-    let messages = imap_session.uid_fetch("15:15", "ALL")?;
+    let messages = imap_session.uid_fetch("23:23", "ALL")?;
 
     // save attachments
     for msg in messages.iter() {
@@ -78,7 +75,6 @@ async fn connect() -> imap::error::Result<Option<Vec<String>>> {
                     let mut file = File::create(filename.clone())
                         .map_err(|e| eprintln!("Failed to create file: {}", e))
                         .expect("Failed to create file");
-
                     file.write_all(&pdf_binary)
                         .map_err(|e| eprintln!("Failed to write to file: {}", e))
                         .expect("Failed to write to file");
