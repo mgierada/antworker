@@ -1,6 +1,10 @@
+use base64::{
+    engine::{self, general_purpose},
+};
 use dotenv::dotenv;
 use lazy_static::lazy_static;
-use mailparse::{self, parse_mail, MailHeaderMap};
+
+use mailparse::{self, parse_mail};
 use quoted_printable::{decode, ParseMode};
 use std::{env::var, fs::File, io::Write};
 extern crate imap;
@@ -58,41 +62,24 @@ async fn connect() -> imap::error::Result<Option<Vec<String>>> {
             for part in mail.subparts.iter() {
                 let content_type = &part.ctype;
                 println!("content_type: {:?}", content_type);
-                if content_type.mimetype == "image/png"
-                    || content_type.mimetype == "application/pdf"
-                // && content_type.subtype == "octet-stream"
-                {
-                    // Determine the character set
-                    let charset = &content_type.charset;
-                    println!("charset: {:?}", charset);
+
+                if content_type.mimetype == "application/pdf" {
                     // Extract the filename from the Content-Type header
                     let filename = content_type
                         .params
                         .get("name")
                         .cloned()
-                        .unwrap_or_else(|| format!("attachment_{}_unnamed.txt", uid));
-                    // Write the attachment content to a file
+                        .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
+                    let pdf_binary = part
+                        .get_body_raw()
+                        .map_err(|e| eprintln!("Failed to get body raw: {}", e))
+                        .expect("Failed to get body raw");
+                    // Write the attachment content to a file without decoding
                     let mut file = File::create(filename.clone())
                         .map_err(|e| eprintln!("Failed to create file: {}", e))
                         .expect("Failed to create file");
-                    let decoded_content = match charset.as_str() {
-                        "utf-8" => std::str::from_utf8(&part.raw_bytes)
-                            .map(|s| s.to_owned())
-                            .unwrap_or_else(|e| {
-                                eprintln!("Failed to decode UTF-8 content: {}", e);
-                                String::new()
-                            }),
-                        _ => {
-                            // If the charset is not utf-8, use a specific decoding method
-                            decode(&part.raw_bytes, ParseMode::Robust)
-                                .map(|v| String::from_utf8_lossy(&v).to_string())
-                                .unwrap_or_else(|e| {
-                                    eprintln!("Failed to decode content: {}", e);
-                                    String::new()
-                                })
-                        }
-                    };
-                    file.write_all(decoded_content.as_bytes())
+
+                    file.write_all(&pdf_binary)
                         .map_err(|e| eprintln!("Failed to write to file: {}", e))
                         .expect("Failed to write to file");
                     println!("Attachment saved to file: {}", filename);
