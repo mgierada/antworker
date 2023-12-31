@@ -44,7 +44,7 @@ async fn connect() -> imap::error::Result<Option<Vec<String>>> {
     imap_session.select("INBOX")?;
 
     // let messages = imap_session.fetch("RECENT", "ENVELOPE UID")?;
-    let messages = imap_session.uid_fetch("23:23", "ALL")?;
+    let messages = imap_session.uid_fetch("15:15", "ALL")?;
 
     // save attachments
     for msg in messages.iter() {
@@ -62,6 +62,9 @@ async fn connect() -> imap::error::Result<Option<Vec<String>>> {
                     || content_type.mimetype == "application/pdf"
                 // && content_type.subtype == "octet-stream"
                 {
+                    // Determine the character set
+                    let charset = &content_type.charset;
+                    println!("charset: {:?}", charset);
                     // Extract the filename from the Content-Type header
                     let filename = content_type
                         .params
@@ -72,7 +75,24 @@ async fn connect() -> imap::error::Result<Option<Vec<String>>> {
                     let mut file = File::create(filename.clone())
                         .map_err(|e| eprintln!("Failed to create file: {}", e))
                         .expect("Failed to create file");
-                    file.write_all(&decode(&part.raw_bytes, ParseMode::Robust).unwrap())
+                    let decoded_content = match charset.as_str() {
+                        "utf-8" => std::str::from_utf8(&part.raw_bytes)
+                            .map(|s| s.to_owned())
+                            .unwrap_or_else(|e| {
+                                eprintln!("Failed to decode UTF-8 content: {}", e);
+                                String::new()
+                            }),
+                        _ => {
+                            // If the charset is not utf-8, use a specific decoding method
+                            decode(&part.raw_bytes, ParseMode::Robust)
+                                .map(|v| String::from_utf8_lossy(&v).to_string())
+                                .unwrap_or_else(|e| {
+                                    eprintln!("Failed to decode content: {}", e);
+                                    String::new()
+                                })
+                        }
+                    };
+                    file.write_all(decoded_content.as_bytes())
                         .map_err(|e| eprintln!("Failed to write to file: {}", e))
                         .expect("Failed to write to file");
                     println!("Attachment saved to file: {}", filename);
