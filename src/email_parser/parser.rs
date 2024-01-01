@@ -51,21 +51,19 @@ pub fn save_attachments<S: std::io::Read + std::io::Write>(
                 let content_type = &part.ctype;
                 match content_type.mimetype.as_str() {
                     "application/pdf" => {
-                        // Extract the filename from the Content-Type header
                         let filename = content_type
                             .params
                             .get("name")
                             .cloned()
                             .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
-                        let pdf_binary = part
+                        let binary_content = part
                             .get_body_raw()
                             .map_err(|e| eprintln!("Failed to get body raw: {}", e))
                             .expect("Failed to get body raw");
-                        // Write the attachment content to a file without decoding
                         let mut file = File::create(filename.clone())
                             .map_err(|e| eprintln!("Failed to create file: {}", e))
                             .expect("Failed to create file");
-                        file.write_all(&pdf_binary)
+                        file.write_all(&binary_content)
                             .map_err(|e| eprintln!("Failed to write to file: {}", e))
                             .expect("Failed to write to file");
                         println!("Attachment saved to file: {}", filename);
