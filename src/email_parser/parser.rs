@@ -38,8 +38,7 @@ pub fn fetch_emails<S: std::io::Read + std::io::Write>(
 pub fn save_attachments<S: std::io::Read + std::io::Write>(
     messages: &ZeroCopy<Vec<Fetch>>,
     imap_session: &mut Session<TlsStream<S>>,
-) -> imap::error::Result<Option<Vec<String>>> {
-    // save attachments
+) -> imap::error::Result<()> {
     for msg in messages.iter() {
         let uid = msg.uid.unwrap();
         let message_stream = imap_session.uid_fetch(uid.to_string(), "BODY[]").unwrap();
@@ -75,7 +74,7 @@ pub fn save_attachments<S: std::io::Read + std::io::Write>(
             }
         }
     }
-    Ok(None)
+    Ok(())
 }
 
 pub fn get_subjects(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Option<Vec<String>>> {
@@ -108,7 +107,7 @@ pub async fn process_emails() -> Result<Option<Vec<String>>, Box<dyn std::error:
     let mut imap_session = connect().await?;
     let messages = fetch_emails(&mut imap_session)?;
     let subjects = get_subjects(&messages)?;
-    save_attachments(&messages, &mut imap_session);
+    save_attachments(&messages, &mut imap_session)?;
     imap_session.logout()?;
     Ok(subjects)
 }
