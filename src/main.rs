@@ -7,6 +7,7 @@ extern crate imap;
 extern crate native_tls;
 
 pub mod email_parser;
+pub mod rules;
 
 lazy_static! {
     pub static ref COMPANY_EMAIL_SERVER: String =
