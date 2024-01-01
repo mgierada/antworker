@@ -28,10 +28,11 @@ pub async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStr
 
 pub fn fetch_emails<S: std::io::Read + std::io::Write>(
     imap_session: &mut Session<TlsStream<S>>,
+    uid_set: &str,
 ) -> imap::error::Result<ZeroCopy<Vec<Fetch>>> {
     imap_session.select("INBOX")?;
     // let messages = imap_session.fetch("RECENT", "ENVELOPE UID")?;
-    let messages = imap_session.uid_fetch("23:23", "ALL")?;
+    let messages = imap_session.uid_fetch(&uid_set, "ALL")?;
     Ok(messages)
 }
 
@@ -104,9 +105,10 @@ pub fn get_subjects(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Opti
 
 pub async fn process_emails() -> Result<Option<Vec<String>>, Box<dyn std::error::Error>> {
     let mut imap_session = connect().await?;
-    let messages = fetch_emails(&mut imap_session)?;
+    let uid_set = "23:23";
+    let messages = fetch_emails(&mut imap_session, &uid_set)?;
     let subjects = get_subjects(&messages)?;
-    save_attachments(&messages, &mut imap_session)?;
+    // save_attachments(&messages, &mut imap_session)?;
     imap_session.logout()?;
     Ok(subjects)
 }
