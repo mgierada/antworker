@@ -1,12 +1,15 @@
+use imap::{
+    types::{Fetch, ZeroCopy},
+    Session,
+};
 use mailparse::{self, parse_mail};
+use native_tls::TlsStream;
 use quoted_printable::{decode, ParseMode};
 use std::{fs::File, io::Write};
 
 use crate::{COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_EMAIL_SERVER};
-extern crate imap;
-extern crate native_tls;
 
-pub async fn connect() -> imap::error::Result<Option<Vec<String>>> {
+pub async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
     let client = imap::connect(
         (COMPANY_EMAIL_SERVER.to_string(), *COMPANY_EMAIL_PORT),
@@ -14,19 +17,28 @@ pub async fn connect() -> imap::error::Result<Option<Vec<String>>> {
         &tls,
     )
     .unwrap();
-
-    let mut imap_session = client
+    let imap_session = client
         .login(
             COMPANY_EMAIL.to_string(),
             COMPANY_EMAIL_PASSWORD.to_string(),
         )
         .map_err(|e| e.0)?;
+    Ok(imap_session)
+}
 
+pub fn fetch_emails<S: std::io::Read + std::io::Write>(
+    imap_session: &mut Session<TlsStream<S>>,
+) -> imap::error::Result<ZeroCopy<Vec<Fetch>>> {
     imap_session.select("INBOX")?;
-
     // let messages = imap_session.fetch("RECENT", "ENVELOPE UID")?;
     let messages = imap_session.uid_fetch("23:23", "ALL")?;
+    Ok(messages)
+}
 
+pub fn save_attachments<S: std::io::Read + std::io::Write>(
+    messages: &ZeroCopy<Vec<Fetch>>,
+    imap_session: &mut Session<TlsStream<S>>,
+) -> imap::error::Result<Option<Vec<String>>> {
     // save attachments
     for msg in messages.iter() {
         let uid = msg.uid.unwrap();
@@ -63,7 +75,10 @@ pub async fn connect() -> imap::error::Result<Option<Vec<String>>> {
             }
         }
     }
+    Ok(None)
+}
 
+pub fn get_subjects(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Option<Vec<String>>> {
     let subjects: Vec<String> = messages
         .iter()
         .filter_map(|msg| {
@@ -85,6 +100,15 @@ pub async fn connect() -> imap::error::Result<Option<Vec<String>>> {
             Some(subject)
         })
         .collect();
-    imap_session.logout()?;
+    // imap_session.logout()?;
     Ok(Some(subjects))
+}
+
+pub async fn process_emails() -> Result<Option<Vec<String>>, Box<dyn std::error::Error>> {
+    let mut imap_session = connect().await?;
+    let messages = fetch_emails(&mut imap_session)?;
+    let subjects = get_subjects(&messages)?;
+    save_attachments(&messages, &mut imap_session);
+    imap_session.logout()?;
+    Ok(subjects)
 }

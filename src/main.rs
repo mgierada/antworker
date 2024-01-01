@@ -1,4 +1,4 @@
-use crate::email_parser::parser::connect;
+use crate::email_parser::parser::process_emails;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 
@@ -30,6 +30,6 @@ lazy_static! {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let subject = connect().await.unwrap();
+    let subject = process_emails().await.unwrap();
     println!("subject: {:?}", subject);
 }
