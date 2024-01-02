@@ -9,6 +9,73 @@ use std::{fs::File, io::Write};
 
 use crate::{COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_EMAIL_SERVER};
 
+#[derive(Debug, Default)]
+pub struct EmailDetails {
+    pub date: Option<String>,
+    pub subject: String,
+    // pub from: Option<String>,
+    // pub mailbox: Option<String>,
+    // pub sender: Option<String>,
+    // pub reply_to: Option<String>,
+}
+
+pub fn get_email_details(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Vec<EmailDetails>> {
+    let email_details: Vec<EmailDetails> = messages
+        .iter()
+        .filter_map(|msg| {
+            let envelope = msg.envelope().expect("message did not have an envelope!");
+
+            let subject = envelope
+                .subject
+                .map(|subject_bytes| {
+                    decode(subject_bytes, ParseMode::Robust)
+                        .map(|v| String::from_utf8_lossy(&v).to_string())
+                        .unwrap_or_else(|e| {
+                            eprintln!("Failed to decode subject: {}", e);
+                            String::new()
+                        })
+                        .replace("=?UTF-8?Q?", "")
+                        .replace("?= ", "")
+                        .replace("_", " ")
+                })
+                .unwrap_or_else(|| String::new());
+
+            let email_detail = EmailDetails {
+                date: envelope.date.map(|date_bytes| {
+                    String::from_utf8_lossy(&date_bytes).to_string()
+                }),
+                subject,
+                // from: envelope.from.map(|addresses| stringify_address(&addresses)),
+                // mailbox: envelope.to.and_then(|addresses| {
+                //     addresses
+                //         .iter()
+                //         .next()
+                //         .and_then(|addr| addr.mailbox.as_ref().map(|mb| String::from_utf8_lossy(mb).to_string()))
+                // }),
+                // sender: envelope.sender.map(|addresses| stringify_address(&addresses)),
+                // reply_to: envelope.reply_to.map(|addresses| stringify_address(&addresses)),
+                // Add more fields as needed
+            };
+
+            Some(email_detail)
+        })
+        .collect();
+
+    Ok(email_details)
+}
+
+// fn stringify_address(addresses: &[Address]) -> String {
+//     addresses
+//         .iter()
+//         .map(|addr| {
+//             addr.mailbox
+//                 .as_ref()
+//                 .map_or_else(|| String::new(), |mb| String::from_utf8_lossy(mb).to_string())
+//         })
+//         .collect::<Vec<String>>()
+//         .join(", ")
+// }
+
 pub async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
     let client = imap::connect(
@@ -77,38 +144,13 @@ pub fn save_attachments<S: std::io::Read + std::io::Write>(
     Ok(())
 }
 
-pub fn get_subjects(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Option<Vec<String>>> {
-    let subjects: Vec<String> = messages
-        .iter()
-        .filter_map(|msg| {
-            let envelope = msg.envelope().expect("message did not have an envelope!");
-            let subject = envelope
-                .subject
-                .map(|subject_bytes| {
-                    decode(subject_bytes, ParseMode::Robust)
-                        .map(|v| String::from_utf8_lossy(&v).to_string())
-                        .unwrap_or_else(|e| {
-                            eprintln!("Failed to decode subject: {}", e);
-                            String::new()
-                        })
-                        .replace("=?UTF-8?Q?", "")
-                        .replace("?= ", "")
-                        .replace("_", " ")
-                })
-                .unwrap_or_else(|| String::new());
-            Some(subject)
-        })
-        .collect();
-    // imap_session.logout()?;
-    Ok(Some(subjects))
-}
-
-pub async fn process_emails() -> Result<Option<Vec<String>>, Box<dyn std::error::Error>> {
+pub async fn process_emails() -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
     let mut imap_session = connect().await?;
     let uid_set = "23:23";
     let messages = fetch_emails(&mut imap_session, &uid_set)?;
-    let subjects = get_subjects(&messages)?;
+    // let subjects = get_subjects(&messages)?;
+    let get_email_details = get_email_details(&messages)?;
     // save_attachments(&messages, &mut imap_session)?;
     imap_session.logout()?;
-    Ok(subjects)
+    Ok(get_email_details)
 }
