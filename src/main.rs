@@ -1,14 +1,14 @@
 use crate::email_parser::parser::process_emails;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
-use rules::save_location:: setup;
+use io::save_location::setup;
 
 use std::env::var;
 extern crate imap;
 extern crate native_tls;
 
 pub mod email_parser;
-pub mod rules;
+pub mod io;
 
 lazy_static! {
     pub static ref COMPANY_EMAIL_SERVER: String =
@@ -34,6 +34,5 @@ async fn main() {
     dotenv().ok();
     // let subject = process_emails().await.unwrap();
     // println!("subject: {:?}", subject);
-    let setup= setup();
-    
+    let setup = setup();
 }
