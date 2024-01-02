@@ -11,9 +11,9 @@ use crate::{COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_E
 
 #[derive(Debug, Default)]
 pub struct EmailDetails {
-    pub date: Option<String>,
     pub subject: String,
-    pub email: Vec<String>,
+    pub from: Vec<String>,
+    pub date: Option<String>,
 }
 
 fn get_email_details(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Vec<EmailDetails>> {
@@ -41,7 +41,7 @@ fn get_email_details(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Vec
                 .date
                 .map(|date_bytes| String::from_utf8_lossy(&date_bytes).to_string());
             // NOTE: Extract email
-            let email: Vec<String> =
+            let from: Vec<String> =
                 envelope
                     .from
                     .as_ref()
@@ -61,7 +61,7 @@ fn get_email_details(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Vec
             Some(EmailDetails {
                 date,
                 subject,
-                email,
+                from,
             })
         })
         .collect();
