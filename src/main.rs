@@ -1,6 +1,7 @@
 use crate::email_parser::parser::process_emails;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
+use rules::save_location:: setup;
 
 use std::env::var;
 extern crate imap;
@@ -31,6 +32,8 @@ lazy_static! {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let subject = process_emails().await.unwrap();
-    println!("subject: {:?}", subject);
+    // let subject = process_emails().await.unwrap();
+    // println!("subject: {:?}", subject);
+    let setup= setup();
+    
 }
