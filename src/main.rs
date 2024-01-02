@@ -9,6 +9,7 @@ extern crate native_tls;
 
 pub mod email_parser;
 pub mod io;
+pub mod rules;
 
 lazy_static! {
     pub static ref COMPANY_EMAIL_SERVER: String =
@@ -32,7 +33,8 @@ lazy_static! {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    // let subject = process_emails().await.unwrap();
-    // println!("subject: {:?}", subject);
-    let setup = setup();
+    let subject = process_emails().await.unwrap();
+    println!("email_details: {:?}", subject);
+    // let setup = setup();
+    //
 }
