@@ -16,14 +16,12 @@ pub struct EmailDetails {
     pub email: Vec<String>,
 }
 
-fn get_email_details(
-    messages: &ZeroCopy<Vec<Fetch>>,
-) -> imap::error::Result<Vec<EmailDetails>> {
+fn get_email_details(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Vec<EmailDetails>> {
     let email_details: Vec<EmailDetails> = messages
         .iter()
         .filter_map(|msg| {
             let envelope = msg.envelope().expect("message did not have an envelope!");
-
+            // NOTE: Extract subject
             let subject = envelope
                 .subject
                 .map(|subject_bytes| {
@@ -38,46 +36,27 @@ fn get_email_details(
                         .replace("_", " ")
                 })
                 .unwrap_or_else(|| String::new());
-
+            // NOTE: Extract date
             let date = envelope
                 .date
                 .map(|date_bytes| String::from_utf8_lossy(&date_bytes).to_string());
-
-            let from = vec_option_to_string(
+            // NOTE: Extract email
+            let email: Vec<String> =
                 envelope
                     .from
                     .as_ref()
-                    .map(|from_addresses| {
+                    .map_or_else(Vec::new, |from_addresses| {
                         from_addresses
                             .iter()
-                            .map(|address| address.mailbox.clone()) // Clone the Vec<u8>
+                            .map(|address| {
+                                format!(
+                                    "{}@{}",
+                                    String::from_utf8_lossy(address.mailbox.unwrap_or_default()).to_string(),
+                                    String::from_utf8_lossy(address.host.unwrap_or_default()).to_string()
+                                )
+                            })
                             .collect()
-                    })
-                    .unwrap_or_else(Vec::new),
-            );
-
-            let host = vec_option_to_string(
-                envelope
-                    .from
-                    .as_ref()
-                    .map(|from_addresses| {
-                        from_addresses
-                            .iter()
-                            .map(|address| address.host.clone())
-                            .collect()
-                    })
-                    .unwrap_or_else(Vec::new),
-            );
-
-            // let email: Vec<String> = envelope.from.map_or_else(Vec::new, |from_addresses| {
-            //     from_addresses.iter().map(|address| format!("{}@{}", address.mailbox, address.host)).collect()
-            // });
-
-            let email: Vec<String> = from
-                .iter()
-                .zip(&host)
-                .map(|(f, h)| format!("{}@{}", f, h))
-                .collect();
+                    });
 
             Some(EmailDetails {
                 date,
@@ -90,17 +69,19 @@ fn get_email_details(
     Ok(email_details)
 }
 
-fn vec_option_to_string(vec_option: Vec<Option<&[u8]>>) -> Vec<String> {
-    vec_option
-        .iter()
-        .map(|opt| opt.map_or(String::new(), |s| String::from_utf8_lossy(s).to_string()))
-        .collect()
-}
-
 async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
-    let client = imap::connect((COMPANY_EMAIL_SERVER.to_string(), *COMPANY_EMAIL_PORT), COMPANY_EMAIL_SERVER.to_string(), &tls)?;
-    let imap_session = client.login(COMPANY_EMAIL.to_string(), COMPANY_EMAIL_PASSWORD.to_string()).map_err(|e| e.0)?;
+    let client = imap::connect(
+        (COMPANY_EMAIL_SERVER.to_string(), *COMPANY_EMAIL_PORT),
+        COMPANY_EMAIL_SERVER.to_string(),
+        &tls,
+    )?;
+    let imap_session = client
+        .login(
+            COMPANY_EMAIL.to_string(),
+            COMPANY_EMAIL_PASSWORD.to_string(),
+        )
+        .map_err(|e| e.0)?;
     Ok(imap_session)
 }
 
