@@ -5,7 +5,10 @@ use imap::{
 use mailparse::{self, parse_mail};
 use native_tls::TlsStream;
 use quoted_printable::{decode, ParseMode};
-use std::{fs::File, io::Write};
+use std::{
+    fs::File,
+    io::{Read, Write},
+};
 
 use crate::{
     rules::define::{define_rules, FilterRules},
@@ -17,6 +20,7 @@ pub struct EmailDetails {
     pub subject: String,
     pub from: Vec<String>,
     pub date: Option<String>,
+    pub uid: u32,
 }
 
 async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
@@ -35,7 +39,7 @@ async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStream>
     Ok(imap_session)
 }
 
-fn fetch_emails<S: std::io::Read + std::io::Write>(
+fn fetch_emails<S: Read + Write>(
     imap_session: &mut Session<TlsStream<S>>,
     uid_set: &str,
 ) -> imap::error::Result<ZeroCopy<Vec<Fetch>>> {
@@ -43,6 +47,19 @@ fn fetch_emails<S: std::io::Read + std::io::Write>(
     let messages = imap_session.uid_fetch(&uid_set, "ALL")?;
     Ok(messages)
 }
+
+// fn filter_messages(messages: &ZeroCopy<Vec<Fetch>>, rules: &FilterRules) -> Vec<Fetch> {
+//     let filtered_messages: Vec<Fetch> = messages
+//         .iter()
+//         .filter(|&&msg| {
+//             // Apply filtering rules
+//             if !rules.is_empty() && !rules.matches(&msg) {
+//                 return false;
+//             }
+//             true
+//         }).cloned().collect();
+//     filtered_messages
+// }
 
 fn get_email_details(
     messages: &ZeroCopy<Vec<Fetch>>,
@@ -55,6 +72,7 @@ fn get_email_details(
             if !rules.is_empty() && !rules.matches(msg) {
                 return None;
             }
+            let uid = msg.uid.unwrap();
             let envelope = msg.envelope().expect("message did not have an envelope!");
             // NOTE: Extract subject
             let subject = envelope
@@ -98,18 +116,19 @@ fn get_email_details(
                 date,
                 subject,
                 from,
+                uid,
             })
         })
         .collect();
     Ok(email_details)
 }
 
-pub fn save_attachments<S: std::io::Read + std::io::Write>(
-    messages: &ZeroCopy<Vec<Fetch>>,
+fn get_attachments<S: Read + Write>(
+    email_details: &Vec<EmailDetails>,
     imap_session: &mut Session<TlsStream<S>>,
-) -> imap::error::Result<()> {
-    for msg in messages.iter() {
-        let uid = msg.uid.unwrap();
+) -> () {
+    for email in email_details.iter() {
+        let uid = email.uid;
         let message_stream = imap_session.uid_fetch(uid.to_string(), "BODY[]").unwrap();
         for fetch_result in &message_stream {
             let body = fetch_result.body().unwrap();
@@ -142,7 +161,6 @@ pub fn save_attachments<S: std::io::Read + std::io::Write>(
             }
         }
     }
-    Ok(())
 }
 
 pub async fn process_emails() -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
@@ -151,6 +169,7 @@ pub async fn process_emails() -> Result<Vec<EmailDetails>, Box<dyn std::error::E
     let messages = fetch_emails(&mut imap_session, &uid_set)?;
     let rules = define_rules();
     let email_details = get_email_details(&messages, &rules)?;
+    get_attachments(&email_details, &mut imap_session);
     // save_attachments(&messages, &mut imap_session)?;
     imap_session.logout()?;
     Ok(email_details)
