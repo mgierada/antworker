@@ -14,14 +14,9 @@ pub struct EmailDetails {
     pub date: Option<String>,
     pub subject: String,
     pub email: Vec<String>,
-    // pub mailbox: Option<String>,
-    // pub sender: Option<String>,
-    // pub reply_to: Option<String>,
 }
 
-
-
-pub fn get_email_details(
+fn get_email_details(
     messages: &ZeroCopy<Vec<Fetch>>,
 ) -> imap::error::Result<Vec<EmailDetails>> {
     let email_details: Vec<EmailDetails> = messages
@@ -74,19 +69,21 @@ pub fn get_email_details(
                     .unwrap_or_else(Vec::new),
             );
 
+            // let email: Vec<String> = envelope.from.map_or_else(Vec::new, |from_addresses| {
+            //     from_addresses.iter().map(|address| format!("{}@{}", address.mailbox, address.host)).collect()
+            // });
+
             let email: Vec<String> = from
                 .iter()
                 .zip(&host)
                 .map(|(f, h)| format!("{}@{}", f, h))
                 .collect();
 
-            let email_detail = EmailDetails {
+            Some(EmailDetails {
                 date,
                 subject,
                 email,
-            };
-
-            Some(email_detail)
+            })
         })
         .collect();
 
@@ -100,29 +97,18 @@ fn vec_option_to_string(vec_option: Vec<Option<&[u8]>>) -> Vec<String> {
         .collect()
 }
 
-pub async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
+async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
-    let client = imap::connect(
-        (COMPANY_EMAIL_SERVER.to_string(), *COMPANY_EMAIL_PORT),
-        COMPANY_EMAIL_SERVER.to_string(),
-        &tls,
-    )
-    .unwrap();
-    let imap_session = client
-        .login(
-            COMPANY_EMAIL.to_string(),
-            COMPANY_EMAIL_PASSWORD.to_string(),
-        )
-        .map_err(|e| e.0)?;
+    let client = imap::connect((COMPANY_EMAIL_SERVER.to_string(), *COMPANY_EMAIL_PORT), COMPANY_EMAIL_SERVER.to_string(), &tls)?;
+    let imap_session = client.login(COMPANY_EMAIL.to_string(), COMPANY_EMAIL_PASSWORD.to_string()).map_err(|e| e.0)?;
     Ok(imap_session)
 }
 
-pub fn fetch_emails<S: std::io::Read + std::io::Write>(
+fn fetch_emails<S: std::io::Read + std::io::Write>(
     imap_session: &mut Session<TlsStream<S>>,
     uid_set: &str,
 ) -> imap::error::Result<ZeroCopy<Vec<Fetch>>> {
     imap_session.select("INBOX")?;
-    // let messages = imap_session.fetch("RECENT", "ENVELOPE UID")?;
     let messages = imap_session.uid_fetch(&uid_set, "ALL")?;
     Ok(messages)
 }
