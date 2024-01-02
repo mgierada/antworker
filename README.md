@@ -8,7 +8,7 @@
 
 <div align="center">
 
-![Rust](https://img.shields.io/badge/Made%20with%20Rust-blueviolet.svg?style=for-the-badge&logo=rust&logoColor=white)
+![Rust](https://img.shields.io/badge/Made%20with%20Rust-orange.svg?style=for-the-badge&logo=rust&logoColor=white)
 
 </div>
 
