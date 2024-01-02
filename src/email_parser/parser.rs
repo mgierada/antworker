@@ -13,68 +13,86 @@ use crate::{COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_E
 pub struct EmailDetails {
     pub date: Option<String>,
     pub subject: String,
-    // pub from: Option<String>,
+    pub email: String,
     // pub mailbox: Option<String>,
     // pub sender: Option<String>,
     // pub reply_to: Option<String>,
 }
 
-pub fn get_email_details(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Vec<EmailDetails>> {
-    let email_details: Vec<EmailDetails> = messages
-        .iter()
-        .filter_map(|msg| {
-            let envelope = msg.envelope().expect("message did not have an envelope!");
+pub fn get_email_details(
+    messages: &ZeroCopy<Vec<Fetch>>,
+) -> imap::error::Result<Vec<EmailDetails>> {
+    let email_details: Vec<EmailDetails> =
+        messages
+            .iter()
+            .filter_map(|msg| {
+                let envelope = msg.envelope().expect("message did not have an envelope!");
 
-            let subject = envelope
-                .subject
-                .map(|subject_bytes| {
-                    decode(subject_bytes, ParseMode::Robust)
-                        .map(|v| String::from_utf8_lossy(&v).to_string())
-                        .unwrap_or_else(|e| {
-                            eprintln!("Failed to decode subject: {}", e);
-                            String::new()
-                        })
-                        .replace("=?UTF-8?Q?", "")
-                        .replace("?= ", "")
-                        .replace("_", " ")
-                })
-                .unwrap_or_else(|| String::new());
+                let subject = envelope
+                    .subject
+                    .map(|subject_bytes| {
+                        decode(subject_bytes, ParseMode::Robust)
+                            .map(|v| String::from_utf8_lossy(&v).to_string())
+                            .unwrap_or_else(|e| {
+                                eprintln!("Failed to decode subject: {}", e);
+                                String::new()
+                            })
+                            .replace("=?UTF-8?Q?", "")
+                            .replace("?= ", "")
+                            .replace("_", " ")
+                    })
+                    .unwrap_or_else(|| String::new());
 
-            let email_detail = EmailDetails {
-                date: envelope.date.map(|date_bytes| {
-                    String::from_utf8_lossy(&date_bytes).to_string()
-                }),
-                subject,
-                // from: envelope.from.map(|addresses| stringify_address(&addresses)),
-                // mailbox: envelope.to.and_then(|addresses| {
-                //     addresses
-                //         .iter()
-                //         .next()
-                //         .and_then(|addr| addr.mailbox.as_ref().map(|mb| String::from_utf8_lossy(mb).to_string()))
-                // }),
-                // sender: envelope.sender.map(|addresses| stringify_address(&addresses)),
-                // reply_to: envelope.reply_to.map(|addresses| stringify_address(&addresses)),
-                // Add more fields as needed
-            };
+                let date = envelope
+                    .date
+                    .map(|date_bytes| String::from_utf8_lossy(&date_bytes).to_string());
 
-            Some(email_detail)
-        })
-        .collect();
+                let from = envelope
+                    .from
+                    .as_ref()
+                    .map(|from_addresses| {
+                        from_addresses
+                            .iter()
+                            .map(|address| {
+                                address.mailbox.as_ref().map_or(String::new(), |m| {
+                                    String::from_utf8_lossy(m).to_string()
+                                })
+                            })
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    })
+                    .unwrap_or_else(|| String::new());
+
+                let host = envelope
+                    .from
+                    .as_ref()
+                    .map(|from_addresses| {
+                        from_addresses
+                            .iter()
+                            .map(|address| {
+                                address.host.as_ref().map_or(String::new(), |m| {
+                                    String::from_utf8_lossy(m).to_string()
+                                })
+                            })
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    })
+                    .unwrap_or_else(|| String::new());
+
+                let email = format!("{}@{}", from, host);
+
+                let email_detail = EmailDetails {
+                    date,
+                    subject,
+                    email,
+                };
+
+                Some(email_detail)
+            })
+            .collect();
 
     Ok(email_details)
 }
-
-// fn stringify_address(addresses: &[Address]) -> String {
-//     addresses
-//         .iter()
-//         .map(|addr| {
-//             addr.mailbox
-//                 .as_ref()
-//                 .map_or_else(|| String::new(), |mb| String::from_utf8_lossy(mb).to_string())
-//         })
-//         .collect::<Vec<String>>()
-//         .join(", ")
-// }
 
 pub async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
