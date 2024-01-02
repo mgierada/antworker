@@ -29,6 +29,9 @@ impl FilterRules {
     }
 
     pub fn matches(&self, msg: &Fetch) -> bool {
+        // Check whether the sender of the given email message is in the list of allowed senders
+        // specified by the FilterRules struct. If the sender is allowed, the method returns true;
+        // otherwise, it returns false.
         let envelope = msg.envelope().expect("message did not have an envelope!");
         // Check if the sender is allowed
         let sender_allowed = envelope
