@@ -51,8 +51,10 @@ fn get_email_details(messages: &ZeroCopy<Vec<Fetch>>) -> imap::error::Result<Vec
                             .map(|address| {
                                 format!(
                                     "{}@{}",
-                                    String::from_utf8_lossy(address.mailbox.unwrap_or_default()).to_string(),
-                                    String::from_utf8_lossy(address.host.unwrap_or_default()).to_string()
+                                    String::from_utf8_lossy(address.mailbox.unwrap_or_default())
+                                        .to_string(),
+                                    String::from_utf8_lossy(address.host.unwrap_or_default())
+                                        .to_string()
                                 )
                             })
                             .collect()
