@@ -34,9 +34,9 @@ lazy_static! {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    // let subject = process_emails().await.unwrap();
-    // println!("email_details: {:?}", subject);
+    let subject = process_emails().await.unwrap();
+    println!("email_details: {:?}", subject);
     // let setup = setup();
     //
-    let rules = define_rules();
+    // let rules = define_rules();
 }
