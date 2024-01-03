@@ -1,4 +1,5 @@
 use crate::email_parser::parser::process_emails;
+use clap::{Parser, Subcommand};
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 
@@ -6,10 +7,10 @@ use std::env::var;
 extern crate imap;
 extern crate native_tls;
 
+pub mod datemath;
 pub mod email_parser;
 pub mod io;
 pub mod rules;
-pub mod datemath;
 
 lazy_static! {
     pub static ref COMPANY_EMAIL_SERVER: String =
@@ -30,9 +31,33 @@ lazy_static! {
         var("COMPANY_EMAIL_PASSWORD").expect("COMPANY_EMAIL_PASSWORD must be set.");
 }
 
+#[derive(Debug, Parser)]
+#[command(name="antworker",version="0.1.0", about = "🐜 Your daily assistant that manages common tasks", author="Maciej Gierada, @mgierada, maciek.gierada@gmail.com", long_about = None, help_template("\
+{author-with-newline}
+{name}-{version} {about-with-newline} 
+{usage-heading} {usage}
+
+{all-args}{after-help}
+"))]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Debug, Subcommand)]
+enum Commands {
+    #[command(about = "Fetch all emials and save attachments in designated location for the current month")]
+    Emails,
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let email_details = process_emails().await.unwrap();
-    println!("email_details: {:?}", email_details);
+    let args = Cli::parse();
+    match args.command {
+        Commands::Emails {} => {
+            let email_details = process_emails().await.unwrap();
+            println!("email_details: {:?}", email_details);
+        }
+    }
 }
