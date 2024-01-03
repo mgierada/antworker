@@ -8,12 +8,15 @@ use native_tls::TlsStream;
 use quoted_printable::{decode, ParseMode};
 use std::{
     fs::File,
-    io::{Read, Write}, path::Path,
+    io::{Read, Write},
+    path::Path,
 };
 
 use crate::{
+    io::save_location::setup_save_location,
     rules::define::{define_rules, FilterRules},
-    COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_EMAIL_SERVER, io::save_location::setup_save_location,
+    COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_EMAIL_SERVER, PRIVATE_EMAIL,
+    PRIVATE_EMAIL_PASSWORD,
 };
 
 #[derive(Debug, Default)]
@@ -24,17 +27,25 @@ pub struct EmailDetails {
     pub uid: u32,
 }
 
-async fn connect() -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
+#[derive(Debug, Default)]
+pub struct Credentials {
+    pub server: String,
+    pub port: u16,
+    pub email: String,
+    pub password: String,
+}
+
+async fn connect(credentials: &Credentials) -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
     let client = imap::connect(
-        (COMPANY_EMAIL_SERVER.to_string(), *COMPANY_EMAIL_PORT),
-        COMPANY_EMAIL_SERVER.to_string(),
+        (&*credentials.server, credentials.port), // Pass a reference to credentials.server
+        &credentials.server, // Pass a reference to credentials.server
         &tls,
     )?;
     let imap_session = client
         .login(
-            COMPANY_EMAIL.to_string(),
-            COMPANY_EMAIL_PASSWORD.to_string(),
+            &credentials.email, // Pass a reference to credentials.email
+            &credentials.password, // Pass a reference to credentials.password
         )
         .map_err(|e| e.0)?;
     Ok(imap_session)
@@ -186,7 +197,7 @@ fn get_and_save_attachments<S: Read + Write>(
                             .get("name")
                             .cloned()
                             .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
-                        let full_path_save_location= Path::new(save_location).join(&filename);
+                        let full_path_save_location = Path::new(save_location).join(&filename);
                         let binary_content = part
                             .get_body_raw()
                             .map_err(|e| eprintln!("Failed to get body raw: {}", e))
@@ -197,7 +208,10 @@ fn get_and_save_attachments<S: Read + Write>(
                         file.write_all(&binary_content)
                             .map_err(|e| eprintln!("Failed to write to file: {}", e))
                             .expect("Failed to write to file");
-                        println!("Attachment saved to file: {}", full_path_save_location.to_str().unwrap());
+                        println!(
+                            "Attachment saved to file: {}",
+                            full_path_save_location.to_str().unwrap()
+                        );
                     }
                     _ => {}
                 }
@@ -206,9 +220,14 @@ fn get_and_save_attachments<S: Read + Write>(
     }
 }
 
-
 pub async fn process_emails() -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
-    let mut imap_session = connect().await?;
+    let credentials = Credentials {
+        server: COMPANY_EMAIL_SERVER.to_string(),
+        port: *COMPANY_EMAIL_PORT,
+        email: COMPANY_EMAIL.to_string(),
+        password: COMPANY_EMAIL_PASSWORD.to_string(),
+    };
+    let mut imap_session = connect(&credentials).await?;
     let uid_set = "1:*"; // get all emails
     let messages = fetch_emails(&mut imap_session, &uid_set)?;
     let rules = define_rules();

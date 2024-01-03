@@ -30,6 +30,14 @@ lazy_static! {
     pub static ref COMPANY_EMAIL_PASSWORD: String =
         var("COMPANY_EMAIL_PASSWORD").expect("COMPANY_EMAIL_PASSWORD must be set.");
 }
+lazy_static! {
+    pub static ref PRIVATE_EMAIL: String =
+        var("PRIVATE_EMAIL").expect("COMPANY_PRIVATE must be set.");
+}
+lazy_static! {
+    pub static ref PRIVATE_EMAIL_PASSWORD: String =
+        var("PRIVATE_EMAIL_PASSWORD").expect("PRIVATE_EMAIL_PASSWORD must be set.");
+}
 
 #[derive(Debug, Parser)]
 #[command(name="antworker",version="0.1.0", about = "🐜 Your daily assistant that manages common tasks", author="Maciej Gierada, @mgierada, maciek.gierada@gmail.com", long_about = None, help_template("\
@@ -46,7 +54,9 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    #[command(about = "Fetch all emials and save attachments in designated location for the current month")]
+    #[command(
+        about = "Fetch all emials and save attachments in designated location for the current month"
+    )]
     Emails,
 }
 
