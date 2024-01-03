@@ -34,6 +34,7 @@ pub struct Credentials {
     pub port: u16,
     pub email: String,
     pub password: String,
+    pub uid_set: String,
 }
 
 async fn connect(
@@ -193,8 +194,8 @@ async fn process_inbox(
     credentials: &Credentials,
 ) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
     let mut imap_session = connect(credentials).await?;
-    let uid_set = "1:*";
-    let messages = fetch_emails(&mut imap_session, &uid_set)?;
+    // let uid_set = "1:*";
+    let messages = fetch_emails(&mut imap_session, &credentials.uid_set)?;
     let rules = define_rules();
     let email_details = get_email_details(&messages, &rules)?;
     let save_location = setup_save_location()?;
@@ -226,6 +227,7 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
             port: *COMPANY_EMAIL_PORT,
             email: COMPANY_EMAIL.to_string(),
             password: COMPANY_EMAIL_PASSWORD.to_string(),
+            uid_set: "1:*".to_string(),
         },
     );
     inboxes.insert(
@@ -235,6 +237,7 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
             port: *COMPANY_EMAIL_PORT,
             email: PRIVATE_EMAIL.to_string(),
             password: PRIVATE_EMAIL_PASSWORD.to_string(),
+            uid_set: "6000:*".to_string(),
         },
     );
 
