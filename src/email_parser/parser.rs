@@ -8,12 +8,12 @@ use native_tls::TlsStream;
 use quoted_printable::{decode, ParseMode};
 use std::{
     fs::File,
-    io::{Read, Write},
+    io::{Read, Write}, path::Path,
 };
 
 use crate::{
     rules::define::{define_rules, FilterRules},
-    COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_EMAIL_SERVER,
+    COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_EMAIL_SERVER, io::save_location::setup_save_location,
 };
 
 #[derive(Debug, Default)]
@@ -164,9 +164,10 @@ pub fn save_attachments<S: Read + Write>(
     Ok(())
 }
 
-fn get_attachments<S: Read + Write>(
+fn get_and_save_attachments<S: Read + Write>(
     email_details: &Vec<EmailDetails>,
     imap_session: &mut Session<TlsStream<S>>,
+    save_location: &String,
 ) -> () {
     for email in email_details.iter() {
         let uid = email.uid;
@@ -185,17 +186,18 @@ fn get_attachments<S: Read + Write>(
                             .get("name")
                             .cloned()
                             .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
+                        let full_path_save_location= Path::new(save_location).join(&filename);
                         let binary_content = part
                             .get_body_raw()
                             .map_err(|e| eprintln!("Failed to get body raw: {}", e))
                             .expect("Failed to get body raw");
-                        let mut file = File::create(filename.clone())
+                        let mut file = File::create(full_path_save_location.clone())
                             .map_err(|e| eprintln!("Failed to create file: {}", e))
                             .expect("Failed to create file");
                         file.write_all(&binary_content)
                             .map_err(|e| eprintln!("Failed to write to file: {}", e))
                             .expect("Failed to write to file");
-                        println!("Attachment saved to file: {}", filename);
+                        println!("Attachment saved to file: {}", full_path_save_location.to_str().unwrap());
                     }
                     _ => {}
                 }
@@ -204,14 +206,15 @@ fn get_attachments<S: Read + Write>(
     }
 }
 
+
 pub async fn process_emails() -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
     let mut imap_session = connect().await?;
-    // let uid_set = "23:23";
-    let uid_set = "1:*";
+    let uid_set = "1:*"; // get all emails
     let messages = fetch_emails(&mut imap_session, &uid_set)?;
     let rules = define_rules();
     let email_details = get_email_details(&messages, &rules)?;
-    get_attachments(&email_details, &mut imap_session);
+    let save_location = setup_save_location()?;
+    get_and_save_attachments(&email_details, &mut imap_session, &save_location);
     imap_session.logout()?;
     Ok(email_details)
 }

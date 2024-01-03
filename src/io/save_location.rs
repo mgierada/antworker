@@ -1,15 +1,16 @@
-use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
 use std::{env::var, fs};
+
+use crate::datemath::date::{get_current_month_str, get_current_year_str};
 
 lazy_static! {
     pub static ref ROOT_SAVE_LOCATION_PATH: String =
         var("ROOT_SAVE_LOCATION_PATH").expect("ROOT_SAVE_LOCATION_PATH must be set.");
 }
 
-fn get_save_loaction() -> String {
-    let current_year = get_current_year();
-    let current_month = get_current_month();
+fn get_save_location() -> String {
+    let current_year = get_current_year_str();
+    let current_month = get_current_month_str();
     let save_location = format!(
         "{}/{}/{}_{}",
         ROOT_SAVE_LOCATION_PATH.as_str(),
@@ -20,16 +21,6 @@ fn get_save_loaction() -> String {
     save_location
 }
 
-fn get_current_year() -> String {
-    let now: DateTime<Utc> = chrono::Utc::now();
-    now.format("%Y").to_string()
-}
-
-fn get_current_month() -> String {
-    let now: DateTime<Utc> = chrono::Utc::now();
-    now.format("%m").to_string()
-}
-
 fn maybe_create_save_location(save_location: &String) -> Result<(), std::io::Error> {
     if !fs::metadata(&save_location).is_ok() {
         fs::create_dir_all(&save_location)?;
@@ -37,9 +28,9 @@ fn maybe_create_save_location(save_location: &String) -> Result<(), std::io::Err
     Ok(())
 }
 
-pub fn setup() -> Result<(), std::io::Error> {
-    let save_location = get_save_loaction();
-    println!("save_location: {:?}", save_location);
+pub fn setup_save_location() -> Result<String, std::io::Error> {
+    let save_location = get_save_location();
+    println!("Using the following save_location: {:?}", save_location);
     maybe_create_save_location(&save_location).unwrap();
-    Ok(())
+    Ok(save_location)
 }
