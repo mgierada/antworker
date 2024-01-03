@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use imap::{
     types::{Fetch, ZeroCopy},
     Session,
@@ -19,7 +20,7 @@ use crate::{
 pub struct EmailDetails {
     pub subject: String,
     pub from: Vec<String>,
-    pub date: Option<String>,
+    pub date: DateTime<Utc>,
     pub uid: u32,
 }
 
@@ -48,18 +49,15 @@ fn fetch_emails<S: Read + Write>(
     Ok(messages)
 }
 
-// fn filter_messages(messages: &ZeroCopy<Vec<Fetch>>, rules: &FilterRules) -> Vec<Fetch> {
-//     let filtered_messages: Vec<Fetch> = messages
-//         .iter()
-//         .filter(|&&msg| {
-//             // Apply filtering rules
-//             if !rules.is_empty() && !rules.matches(&msg) {
-//                 return false;
-//             }
-//             true
-//         }).cloned().collect();
-//     filtered_messages
-// }
+fn parse_date(date_str: &str) -> DateTime<Utc> {
+    let date = DateTime::parse_from_rfc2822(date_str)
+        .map(|dt| dt.with_timezone(&Utc))
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to parse date: {}", e);
+            Utc::now()
+        });
+    date
+}
 
 fn get_email_details(
     messages: &ZeroCopy<Vec<Fetch>>,
@@ -90,9 +88,10 @@ fn get_email_details(
                 })
                 .unwrap_or_else(|| String::new());
             // NOTE: Extract date
-            let date = envelope
+            let raw_date = envelope
                 .date
                 .map(|date_bytes| String::from_utf8_lossy(&date_bytes).to_string());
+            let date = parse_date(&raw_date.unwrap_or_else(|| String::new()));
             // NOTE: Extract email
             let from: Vec<String> =
                 envelope
@@ -121,6 +120,48 @@ fn get_email_details(
         })
         .collect();
     Ok(email_details)
+}
+
+pub fn save_attachments<S: Read + Write>(
+    messages: &ZeroCopy<Vec<Fetch>>,
+    imap_session: &mut Session<TlsStream<S>>,
+    // rules: &FilterRules,
+) -> imap::error::Result<()> {
+    for msg in messages.iter() {
+        let uid = msg.uid.unwrap();
+        let message_stream = imap_session.uid_fetch(uid.to_string(), "BODY[]").unwrap();
+        for fetch_result in &message_stream {
+            let body = fetch_result.body().unwrap();
+            // Parse the MIME content
+            let mail = parse_mail(body).unwrap();
+            // Iterate through MIME parts
+            for part in mail.subparts.iter() {
+                let content_type = &part.ctype;
+                match content_type.mimetype.as_str() {
+                    "application/pdf" => {
+                        let filename = content_type
+                            .params
+                            .get("name")
+                            .cloned()
+                            .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
+                        let binary_content = part
+                            .get_body_raw()
+                            .map_err(|e| eprintln!("Failed to get body raw: {}", e))
+                            .expect("Failed to get body raw");
+                        let mut file = File::create(filename.clone())
+                            .map_err(|e| eprintln!("Failed to create file: {}", e))
+                            .expect("Failed to create file");
+                        file.write_all(&binary_content)
+                            .map_err(|e| eprintln!("Failed to write to file: {}", e))
+                            .expect("Failed to write to file");
+                        println!("Attachment saved to file: {}", filename);
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 fn get_attachments<S: Read + Write>(
