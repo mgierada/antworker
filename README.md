@@ -25,3 +25,9 @@
 </div>
 
 `antworker` is an email-clinet with a low-level implementation of IMAP protocol packed with custom rules. It is powered by Rust.
+
+Create sym-link to access that CLI.
+
+```bash
+ln -s "$(pwd)/antworker" /usr/local/bin/antworker
+```
