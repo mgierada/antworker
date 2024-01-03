@@ -49,7 +49,7 @@ fn fetch_emails<S: Read + Write>(
     Ok(messages)
 }
 
-fn parse_date(date_str: &str) -> DateTime<Utc> {
+pub fn parse_date(date_str: &str) -> DateTime<Utc> {
     let date = DateTime::parse_from_rfc2822(date_str)
         .map(|dt| dt.with_timezone(&Utc))
         .unwrap_or_else(|e| {
@@ -206,12 +206,12 @@ fn get_attachments<S: Read + Write>(
 
 pub async fn process_emails() -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
     let mut imap_session = connect().await?;
-    let uid_set = "23:23";
+    // let uid_set = "23:23";
+    let uid_set = "1:*";
     let messages = fetch_emails(&mut imap_session, &uid_set)?;
     let rules = define_rules();
     let email_details = get_email_details(&messages, &rules)?;
     get_attachments(&email_details, &mut imap_session);
-    // save_attachments(&messages, &mut imap_session)?;
     imap_session.logout()?;
     Ok(email_details)
 }
