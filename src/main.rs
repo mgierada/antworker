@@ -11,6 +11,7 @@ extern crate native_tls;
 pub mod email_parser;
 pub mod io;
 pub mod rules;
+pub mod datemath;
 
 lazy_static! {
     pub static ref COMPANY_EMAIL_SERVER: String =
