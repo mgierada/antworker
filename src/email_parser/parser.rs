@@ -9,7 +9,7 @@ use quoted_printable::{decode, ParseMode};
 use std::{
     fs::File,
     io::{Read, Write},
-    path::Path,
+    path::Path, collections::HashMap,
 };
 
 use crate::{
@@ -220,15 +220,10 @@ fn get_and_save_attachments<S: Read + Write>(
     }
 }
 
-pub async fn process_emails() -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
-    let credentials = Credentials {
-        server: COMPANY_EMAIL_SERVER.to_string(),
-        port: *COMPANY_EMAIL_PORT,
-        email: COMPANY_EMAIL.to_string(),
-        password: COMPANY_EMAIL_PASSWORD.to_string(),
-    };
-    let mut imap_session = connect(&credentials).await?;
-    let uid_set = "1:*"; // get all emails
+// Define a function to fetch emails for a given set of credentials
+async fn process_inbox(credentials: &Credentials) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
+    let mut imap_session = connect(credentials).await?;
+    let uid_set = "1:*";
     let messages = fetch_emails(&mut imap_session, &uid_set)?;
     let rules = define_rules();
     let email_details = get_email_details(&messages, &rules)?;
@@ -236,4 +231,60 @@ pub async fn process_emails() -> Result<Vec<EmailDetails>, Box<dyn std::error::E
     get_and_save_attachments(&email_details, &mut imap_session, &save_location);
     imap_session.logout()?;
     Ok(email_details)
+}
+
+// Define a function to process emails for multiple inboxes
+pub async fn process_all_inboxes(
+    inboxes: HashMap<&str, Credentials>,
+) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
+    let mut all_email_details = Vec::new();
+
+    for (inbox_name, credentials) in inboxes.iter() {
+        println!("Processing inbox: {}", inbox_name);
+        let email_details = process_inbox(credentials).await?;
+        all_email_details.extend(email_details);
+    }
+
+    Ok(all_email_details)
+}
+
+pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
+    let mut inboxes = HashMap::new();
+    inboxes.insert("company", Credentials {
+        server: COMPANY_EMAIL_SERVER.to_string(),
+        port: *COMPANY_EMAIL_PORT,
+        email: COMPANY_EMAIL.to_string(),
+        password: COMPANY_EMAIL_PASSWORD.to_string(),
+    });
+    inboxes.insert("private", Credentials {
+        server: COMPANY_EMAIL_SERVER.to_string(),
+        port: *COMPANY_EMAIL_PORT,
+        email: PRIVATE_EMAIL.to_string(),
+        password: PRIVATE_EMAIL_PASSWORD.to_string(),
+    });
+    
+    let credentials = Credentials {
+        server: COMPANY_EMAIL_SERVER.to_string(),
+        port: *COMPANY_EMAIL_PORT,
+        email: COMPANY_EMAIL.to_string(),
+        password: COMPANY_EMAIL_PASSWORD.to_string(),
+    };
+
+    // Process emails for all inboxes
+    if let Ok(email_details) = process_all_inboxes(inboxes).await {
+        println!("All emails processed successfully: {:?}", email_details);
+    } else {
+        eprintln!("Error processing emails for one or more inboxes");
+    }
+    Ok(())
+    
+    // let mut imap_session = connect(&credentials).await?;
+    // let uid_set = "1:*"; // get all emails
+    // let messages = fetch_emails(&mut imap_session, &uid_set)?;
+    // let rules = define_rules();
+    // let email_details = get_email_details(&messages, &rules)?;
+    // let save_location = setup_save_location()?;
+    // get_and_save_attachments(&email_details, &mut imap_session, &save_location);
+    // imap_session.logout()?;
+    // Ok(email_details)
 }

@@ -66,8 +66,7 @@ async fn main() {
     let args = Cli::parse();
     match args.command {
         Commands::Emails {} => {
-            let email_details = process_emails().await.unwrap();
-            println!("email_details: {:?}", email_details);
+            process_emails().await.unwrap();
         }
     }
 }
