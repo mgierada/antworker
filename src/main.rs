@@ -11,6 +11,7 @@ pub mod datemath;
 pub mod email_parser;
 pub mod io;
 pub mod rules;
+pub mod factories;
 
 lazy_static! {
     pub static ref COMPANY_EMAIL_SERVER: String =

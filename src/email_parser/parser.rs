@@ -17,7 +17,7 @@ use crate::{
     io::save_location::setup_save_location,
     rules::define::{define_rules, FilterRules},
     COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_EMAIL_SERVER, PRIVATE_EMAIL,
-    PRIVATE_EMAIL_PASSWORD,
+    PRIVATE_EMAIL_PASSWORD, factories::credentials::{Credentials, EmailAccountBuilder},
 };
 
 #[derive(Debug, Default)]
@@ -28,14 +28,6 @@ pub struct EmailDetails {
     pub uid: u32,
 }
 
-#[derive(Debug, Default)]
-pub struct Credentials {
-    pub server: String,
-    pub port: u16,
-    pub email: String,
-    pub password: String,
-    pub uid_set: String,
-}
 
 async fn connect(
     credentials: &Credentials,
@@ -220,26 +212,27 @@ pub async fn process_all_inboxes(
 
 pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
     let mut inboxes = HashMap::new();
-    inboxes.insert(
-        "company",
-        Credentials {
-            server: COMPANY_EMAIL_SERVER.to_string(),
-            port: *COMPANY_EMAIL_PORT,
-            email: COMPANY_EMAIL.to_string(),
-            password: COMPANY_EMAIL_PASSWORD.to_string(),
-            uid_set: "1:*".to_string(),
-        },
-    );
-    inboxes.insert(
-        "private",
-        Credentials {
-            server: COMPANY_EMAIL_SERVER.to_string(),
-            port: *COMPANY_EMAIL_PORT,
-            email: PRIVATE_EMAIL.to_string(),
-            password: PRIVATE_EMAIL_PASSWORD.to_string(),
-            uid_set: "6000:*".to_string(),
-        },
-    );
+
+    let company_credentials = EmailAccountBuilder::new(
+        &COMPANY_EMAIL_SERVER,
+        *COMPANY_EMAIL_PORT,
+        &COMPANY_EMAIL,
+        &COMPANY_EMAIL_PASSWORD,
+    )
+    .uid_set("1:*")
+    .build();
+
+    let private_credentials = EmailAccountBuilder::new(
+        &COMPANY_EMAIL_SERVER,
+        *COMPANY_EMAIL_PORT,
+        &PRIVATE_EMAIL,
+        &PRIVATE_EMAIL_PASSWORD,
+    )
+    .uid_set("6000:*")
+    .build();
+
+    inboxes.insert("company", company_credentials);
+    inboxes.insert("private", private_credentials);
 
     // Process emails for all inboxes
     if let Ok(email_details) = process_all_inboxes(inboxes).await {
