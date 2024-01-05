@@ -12,6 +12,7 @@ pub mod email_parser;
 pub mod io;
 pub mod rules;
 pub mod factories;
+pub mod email_sender;
 
 lazy_static! {
     pub static ref COMPANY_EMAIL_SERVER: String =
@@ -67,6 +68,7 @@ enum Commands {
         about = "Fetch all emials and save attachments in designated location for the current month"
     )]
     Emails,
+    Send
 }
 
 #[tokio::main]
@@ -76,6 +78,9 @@ async fn main() {
     match args.command {
         Commands::Emails {} => {
             process_emails().await.unwrap();
+        }
+        Commands::Send {} => {
+            email_sender::sender::send_email()
         }
     }
 }
