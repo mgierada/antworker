@@ -8,7 +8,7 @@ lazy_static! {
         var("ROOT_SAVE_LOCATION_PATH").expect("ROOT_SAVE_LOCATION_PATH must be set.");
 }
 
-fn get_save_location() -> String {
+pub fn get_save_location() -> String {
     let current_year = get_current_year_str();
     let current_month = get_current_month_str();
     let save_location = format!(
