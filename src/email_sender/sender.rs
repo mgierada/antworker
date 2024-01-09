@@ -7,7 +7,7 @@ use lettre::{
 use std::{env::var, fs};
 
 use crate::{
-    io::{files::get_saved_files, save_location::get_save_location},
+    io::files::get_saved_files,
     COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD,
 };
 
