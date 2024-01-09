@@ -4,9 +4,12 @@ use lettre::{
     transport::smtp::authentication::Credentials,
     Message, SmtpTransport, Transport,
 };
-use std::env::var;
+use std::{env::var, fs};
 
-use crate::{io::save_location::get_save_location, COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD};
+use crate::{
+    io::{files::get_saved_files, save_location::get_save_location},
+    COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD,
+};
 
 lazy_static! {
     pub static ref TARGET_EMAIL: String = var("TARGET_EMAIL").expect("TARGET_EMAIL must be set.");
@@ -30,18 +33,31 @@ fn format_email(email: &str) -> String {
     format!("{} <{}>", name, email)
 }
 
-fn add_attachment() -> SinglePart {
-    let filename = String::from("faktura_2024-01-02 01-19-48)_927.pdf");
-    let save_location = get_save_location();
-    let file_to_send = format!("{}/{}", save_location, filename);
-    let filebody = std::fs::read(file_to_send).unwrap();
+fn add_attachment(filepath: &String) -> SinglePart {
+    // let filename = String::from("faktura_2024-01-02 01-19-48)_927.pdf");
+    let filename = filepath
+        .split("/")
+        .collect::<Vec<&str>>()
+        .last()
+        .unwrap()
+        .to_string();
+    // let file_to_send = format!("{}/{}", save_location, filename);
+    let filebody = fs::read(filepath).unwrap();
     let content_type = ContentType::parse("application/pdf").unwrap();
-    let attachment = Attachment::new(filename).body(filebody, content_type);
-    attachment
+    Attachment::new(filename).body(filebody, content_type)
+}
+
+fn add_attachments() -> Vec<SinglePart> {
+    let save_location = get_saved_files();
+    let attachments = save_location
+        .iter()
+        .map(|filepath| add_attachment(filepath))
+        .collect();
+    attachments
 }
 
 pub fn send_email() -> () {
-    let attachment = add_attachment();
+    let attachments = add_attachments();
     let email = Message::builder()
         .to(format_email(TARGET_EMAIL.as_str()).parse().unwrap())
         .from(format_email(FROM_EMAIL.as_str()).parse().unwrap())
@@ -53,11 +69,15 @@ pub fn send_email() -> () {
                         .header(ContentType::TEXT_HTML)
                         .body(String::from("W zalaczeniu faktury za ostatni miesiac.")),
                 )
-                .singlepart(attachment),
-        )
-        // .body(String::from("W zalaczeniu faktury za ostatni miesiac."))
-        .unwrap();
-    // Add the attachment
+                // .subparts(attachments),
+            // .multipart(MultiPart::mixed().build().subparts(attachments))
+                // .multipart(
+                //     MultiPart::builder().attachment(attachments).build().unwrap(),
+                // ),
+                // .singlepart(attachments[0].clone())
+                // .singlepart(attachments[1].clone()),
+        ).unwrap();
+
     let creds = Credentials::new(COMPANY_EMAIL.to_owned(), COMPANY_EMAIL_PASSWORD.to_owned());
     // Open a remote connection to gmail
     let mailer = SmtpTransport::relay(SMTP_TARGET_SERVER.as_str())
