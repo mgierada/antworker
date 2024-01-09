@@ -80,7 +80,7 @@ async fn main() {
             process_emails().await.unwrap();
         }
         Commands::Send {} => {
-            email_sender::sender::send_email()
+            email_sender::sender::send_emails()
         }
     }
 }

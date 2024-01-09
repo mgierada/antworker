@@ -34,7 +34,6 @@ fn format_email(email: &str) -> String {
 }
 
 fn add_attachment(filepath: &String) -> SinglePart {
-    // let filename = String::from("faktura_2024-01-02 01-19-48)_927.pdf");
     let filename = filepath
         .split("/")
         .collect::<Vec<&str>>()
@@ -56,8 +55,16 @@ fn add_attachments() -> Vec<SinglePart> {
     attachments
 }
 
-pub fn send_email() -> () {
+pub fn send_emails() {
     let attachments = add_attachments();
+    attachments
+        .iter()
+        .for_each(|attachment| {
+            send_email(attachment.clone());
+        });
+}
+
+pub fn send_email(attachment: SinglePart) -> () {
     let email = Message::builder()
         .to(format_email(TARGET_EMAIL.as_str()).parse().unwrap())
         .from(format_email(FROM_EMAIL.as_str()).parse().unwrap())
@@ -69,14 +76,10 @@ pub fn send_email() -> () {
                         .header(ContentType::TEXT_HTML)
                         .body(String::from("W zalaczeniu faktury za ostatni miesiac.")),
                 )
-                // .subparts(attachments),
-            // .multipart(MultiPart::mixed().build().subparts(attachments))
-                // .multipart(
-                //     MultiPart::builder().attachment(attachments).build().unwrap(),
-                // ),
-                // .singlepart(attachments[0].clone())
-                // .singlepart(attachments[1].clone()),
-        ).unwrap();
+                // .singlepart(attachments[1].clone())
+                .singlepart(attachment),
+        )
+        .unwrap();
 
     let creds = Credentials::new(COMPANY_EMAIL.to_owned(), COMPANY_EMAIL_PASSWORD.to_owned());
     // Open a remote connection to gmail
