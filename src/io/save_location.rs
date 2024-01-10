@@ -30,7 +30,6 @@ fn maybe_create_save_location(save_location: &String) -> Result<(), std::io::Err
 
 pub fn setup_save_location() -> Result<String, std::io::Error> {
     let save_location = get_save_location();
-    println!("Using the following save_location: {:?}", save_location);
     maybe_create_save_location(&save_location).unwrap();
     Ok(save_location)
 }

@@ -65,9 +65,12 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Commands {
     #[command(
-        about = "Fetch all emials and save attachments in designated location for the current month"
+        about = "Fetch all emails and save attachments in designated location for the current month."
     )]
     Emails,
+    #[command(
+        about = "Send all invoices for the current month to the designated email address."
+    )]
     Send
 }
 

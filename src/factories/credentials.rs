@@ -1,18 +1,10 @@
 #[derive(Debug, Default)]
-pub struct Credentials {
+pub struct EmailAccountBuilder {
     pub server: String,
     pub port: u16,
     pub email: String,
     pub password: String,
     pub uid_set: String,
-}
-
-pub struct EmailAccountBuilder {
-    server: String,
-    port: u16,
-    email: String,
-    password: String,
-    uid_set: String,
 }
 
 impl EmailAccountBuilder {
@@ -31,8 +23,8 @@ impl EmailAccountBuilder {
         self
     }
 
-    pub fn build(self) -> Credentials {
-        Credentials {
+    pub fn build(self) -> EmailAccountBuilder {
+        EmailAccountBuilder {
             server: self.server,
             port: self.port,
             email: self.email,
