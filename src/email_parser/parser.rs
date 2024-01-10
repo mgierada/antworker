@@ -3,7 +3,7 @@ use imap::{
     types::{Fetch, ZeroCopy},
     Session,
 };
-use mailparse::{self, parse_mail};
+use mailparse::{self, parse_mail, ParsedContentType, ParsedMail};
 use native_tls::TlsStream;
 use quoted_printable::{decode, ParseMode};
 use std::{
@@ -14,10 +14,11 @@ use std::{
 };
 
 use crate::{
+    factories::credentials::EmailAccountBuilder,
     io::save_location::setup_save_location,
     rules::define::{define_rules, FilterRules},
     COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD, COMPANY_EMAIL_PORT, COMPANY_EMAIL_SERVER, PRIVATE_EMAIL,
-    PRIVATE_EMAIL_PASSWORD, factories::credentials::{Credentials, EmailAccountBuilder}, S_EMAIL, S_EMAIL_PASSWORD,
+    PRIVATE_EMAIL_PASSWORD, S_EMAIL, S_EMAIL_PASSWORD,
 };
 
 #[derive(Debug, Default)]
@@ -28,21 +29,17 @@ pub struct EmailDetails {
     pub uid: u32,
 }
 
-
 async fn connect(
-    credentials: &Credentials,
+    email_account: &EmailAccountBuilder,
 ) -> imap::error::Result<Session<TlsStream<std::net::TcpStream>>> {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
     let client = imap::connect(
-        (&*credentials.server, credentials.port), // Pass a reference to credentials.server
-        &credentials.server,                      // Pass a reference to credentials.server
+        (&*email_account.server, email_account.port), // Pass a reference to credentials.server
+        &email_account.server,                        // Pass a reference to credentials.server
         &tls,
     )?;
     let imap_session = client
-        .login(
-            &credentials.email,    // Pass a reference to credentials.email
-            &credentials.password, // Pass a reference to credentials.password
-        )
+        .login(&email_account.email, &email_account.password)
         .map_err(|e| e.0)?;
     Ok(imap_session)
 }
@@ -151,28 +148,32 @@ fn get_and_save_attachments<S: Read + Write>(
             // Iterate through MIME parts
             for part in mail.subparts.iter() {
                 let content_type = &part.ctype;
+                println!("Content type: {}", content_type.mimetype);
+                println!("uid: {}", uid);
                 match content_type.mimetype.as_str() {
-                    "application/pdf" => {
-                        let filename = content_type
-                            .params
-                            .get("name")
-                            .cloned()
-                            .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
-                        let full_path_save_location = Path::new(save_location).join(&filename);
-                        let binary_content = part
-                            .get_body_raw()
-                            .map_err(|e| eprintln!("Failed to get body raw: {}", e))
-                            .expect("Failed to get body raw");
-                        let mut file = File::create(full_path_save_location.clone())
-                            .map_err(|e| eprintln!("Failed to create file: {}", e))
-                            .expect("Failed to create file");
-                        file.write_all(&binary_content)
-                            .map_err(|e| eprintln!("Failed to write to file: {}", e))
-                            .expect("Failed to write to file");
-                        println!(
-                            "Attachment saved to file: {}",
-                            full_path_save_location.to_str().unwrap()
-                        );
+                    "application/pdf" | "multipart/mixed" => {
+                        handle_pure_pdf(uid, content_type, part, save_location).unwrap();
+
+                        // let filename = content_type
+                        //     .params
+                        //     .get("name")
+                        //     .cloned()
+                        //     .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
+                        // let full_path_save_location = Path::new(save_location).join(&filename);
+                        // let binary_content = part
+                        //     .get_body_raw()
+                        //     .map_err(|e| eprintln!("Failed to get body raw: {}", e))
+                        //     .expect("Failed to get body raw");
+                        // let mut file = File::create(full_path_save_location.clone())
+                        //     .map_err(|e| eprintln!("Failed to create file: {}", e))
+                        //     .expect("Failed to create file");
+                        // file.write_all(&binary_content)
+                        //     .map_err(|e| eprintln!("Failed to write to file: {}", e))
+                        //     .expect("Failed to write to file");
+                        // println!(
+                        //     "Attachment saved to file: {}",
+                        //     full_path_save_location.to_str().unwrap()
+                        // );
                     }
                     _ => {}
                 }
@@ -181,13 +182,41 @@ fn get_and_save_attachments<S: Read + Write>(
     }
 }
 
+fn handle_pure_pdf(
+    uid: u32,
+    content_type: &ParsedContentType,
+    part: &ParsedMail,
+    save_location: &String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let filename = content_type
+        .params
+        .get("name")
+        .cloned()
+        .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
+    let full_path_save_location = Path::new(save_location).join(&filename);
+    let binary_content = part
+        .get_body_raw()
+        .map_err(|e| eprintln!("Failed to get body raw: {}", e))
+        .expect("Failed to get body raw");
+    let mut file = File::create(full_path_save_location.clone())
+        .map_err(|e| eprintln!("Failed to create file: {}", e))
+        .expect("Failed to create file");
+    file.write_all(&binary_content)
+        .map_err(|e| eprintln!("Failed to write to file: {}", e))
+        .expect("Failed to write to file");
+    println!(
+        "Attachment saved to file: {}",
+        full_path_save_location.to_str().unwrap()
+    );
+    Ok(())
+}
+
 // Define a function to fetch emails for a given set of credentials
 async fn process_inbox(
-    credentials: &Credentials,
+    email_account: &EmailAccountBuilder,
 ) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
-    let mut imap_session = connect(credentials).await?;
-    // let uid_set = "1:*";
-    let messages = fetch_emails(&mut imap_session, &credentials.uid_set)?;
+    let mut imap_session = connect(email_account).await?;
+    let messages = fetch_emails(&mut imap_session, &email_account.uid_set)?;
     let rules = define_rules();
     let email_details = get_email_details(&messages, &rules)?;
     let save_location = setup_save_location()?;
@@ -198,10 +227,9 @@ async fn process_inbox(
 
 // Define a function to process emails for multiple inboxes
 pub async fn process_all_inboxes(
-    inboxes: HashMap<&str, Credentials>,
+    inboxes: HashMap<&str, EmailAccountBuilder>,
 ) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
     let mut all_email_details = Vec::new();
-
     for (inbox_name, credentials) in inboxes.iter() {
         println!("Processing inbox: {}", inbox_name);
         let email_details = process_inbox(credentials).await?;
@@ -212,16 +240,15 @@ pub async fn process_all_inboxes(
 
 pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
     let mut inboxes = HashMap::new();
-
     let company_credentials = EmailAccountBuilder::new(
         &COMPANY_EMAIL_SERVER,
         *COMPANY_EMAIL_PORT,
         &COMPANY_EMAIL,
         &COMPANY_EMAIL_PASSWORD,
     )
-    .uid_set("1:*")
+    // .uid_set("1:*")
+    .uid_set("802:802")
     .build();
-
     let private_credentials = EmailAccountBuilder::new(
         &COMPANY_EMAIL_SERVER,
         *COMPANY_EMAIL_PORT,
@@ -230,7 +257,6 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
     )
     .uid_set("6000:*")
     .build();
-    
     let s_credentials = EmailAccountBuilder::new(
         &COMPANY_EMAIL_SERVER,
         *COMPANY_EMAIL_PORT,
@@ -239,10 +265,9 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
     )
     .uid_set("6000:*")
     .build();
-
     inboxes.insert("company", company_credentials);
-    inboxes.insert("private", private_credentials);
-    inboxes.insert("s", s_credentials);
+    // inboxes.insert("private", private_credentials);
+    // inboxes.insert("s", s_credentials);
 
     // Process emails for all inboxes
     if let Ok(email_details) = process_all_inboxes(inboxes).await {
