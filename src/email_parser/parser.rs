@@ -202,7 +202,7 @@ fn handle_pure_pdf(
         .map_err(|e| eprintln!("Failed to write to file: {}", e))
         .expect("Failed to write to file");
     println!(
-        "Attachment saved to file: {}",
+        "    💾 Attachment saved to file: {}",
         full_path_save_location.to_str().unwrap()
     );
     Ok(())
@@ -228,9 +228,10 @@ pub async fn process_all_inboxes(
 ) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
     let mut all_email_details = Vec::new();
     for (inbox_name, credentials) in inboxes.iter() {
-        println!("Processing inbox: {}", inbox_name);
+        println!("📥 Processing inbox: {}", inbox_name);
         let email_details = process_inbox(credentials).await?;
         all_email_details.extend(email_details);
+        println!("🏁 Done processing inbox: {}", inbox_name)
     }
     Ok(all_email_details)
 }
@@ -244,8 +245,6 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
         &COMPANY_EMAIL_PASSWORD,
     )
     .uid_set("1:*")
-    // .uid_set("802:802")
-    // .uid_set("792:792")
     .build();
     let private_credentials = EmailAccountBuilder::new(
         &COMPANY_EMAIL_SERVER,
