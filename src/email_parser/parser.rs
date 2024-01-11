@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use std::fmt::{self, Debug, Formatter};
 use imap::{
     types::{Fetch, ZeroCopy},
     Session,
@@ -21,12 +22,23 @@ use crate::{
     PRIVATE_EMAIL_PASSWORD, S_EMAIL, S_EMAIL_PASSWORD,
 };
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct EmailDetails {
     pub subject: String,
     pub from: Vec<String>,
     pub date: DateTime<Utc>,
     pub uid: u32,
+}
+
+impl Debug for EmailDetails {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "EmailDetails {{")?;
+        writeln!(f, "  subject: {}", self.subject)?;
+        writeln!(f, "  from: {:?}", self.from)?;
+        writeln!(f, "  date: {}", self.date)?;
+        writeln!(f, "  uid: {}", self.uid)?;
+        write!(f, "}}")
+    }
 }
 
 async fn connect(
@@ -167,9 +179,9 @@ fn handle_mixed(
     part: &ParsedMail,
     save_location: &String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    for sub_part  in part.subparts.iter() {
+    for sub_part in part.subparts.iter() {
         let sub_part_content_type = &sub_part.ctype;
-        match sub_part_content_type .mimetype.as_str() {
+        match sub_part_content_type.mimetype.as_str() {
             "application/pdf" => {
                 handle_pure_pdf(uid, sub_part_content_type, sub_part, save_location).unwrap();
             }
@@ -268,7 +280,7 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
 
     // Process emails for all inboxes
     if let Ok(email_details) = process_all_inboxes(inboxes).await {
-        println!("All emails processed successfully: {:?}", email_details);
+        println!("All emails processed successfully: \n{:?}", email_details);
     } else {
         eprintln!("Error processing emails for one or more inboxes");
     }
