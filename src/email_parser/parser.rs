@@ -148,38 +148,35 @@ fn get_and_save_attachments<S: Read + Write>(
             // Iterate through MIME parts
             for part in mail.subparts.iter() {
                 let content_type = &part.ctype;
-                println!("Content type: {}", content_type.mimetype);
-                println!("uid: {}", uid);
                 match content_type.mimetype.as_str() {
-                    "application/pdf" | "multipart/mixed" => {
+                    "application/pdf" => {
                         handle_pure_pdf(uid, content_type, part, save_location).unwrap();
-
-                        // let filename = content_type
-                        //     .params
-                        //     .get("name")
-                        //     .cloned()
-                        //     .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
-                        // let full_path_save_location = Path::new(save_location).join(&filename);
-                        // let binary_content = part
-                        //     .get_body_raw()
-                        //     .map_err(|e| eprintln!("Failed to get body raw: {}", e))
-                        //     .expect("Failed to get body raw");
-                        // let mut file = File::create(full_path_save_location.clone())
-                        //     .map_err(|e| eprintln!("Failed to create file: {}", e))
-                        //     .expect("Failed to create file");
-                        // file.write_all(&binary_content)
-                        //     .map_err(|e| eprintln!("Failed to write to file: {}", e))
-                        //     .expect("Failed to write to file");
-                        // println!(
-                        //     "Attachment saved to file: {}",
-                        //     full_path_save_location.to_str().unwrap()
-                        // );
+                    }
+                    "multipart/mixed" => {
+                        handle_mixed(uid, part, save_location).unwrap();
                     }
                     _ => {}
                 }
             }
         }
     }
+}
+
+fn handle_mixed(
+    uid: u32,
+    part: &ParsedMail,
+    save_location: &String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    for sub_part  in part.subparts.iter() {
+        let sub_part_content_type = &sub_part.ctype;
+        match sub_part_content_type .mimetype.as_str() {
+            "application/pdf" => {
+                handle_pure_pdf(uid, sub_part_content_type, sub_part, save_location).unwrap();
+            }
+            _ => {}
+        }
+    }
+    Ok(())
 }
 
 fn handle_pure_pdf(
@@ -246,8 +243,9 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
         &COMPANY_EMAIL,
         &COMPANY_EMAIL_PASSWORD,
     )
-    // .uid_set("1:*")
-    .uid_set("802:802")
+    .uid_set("1:*")
+    // .uid_set("802:802")
+    // .uid_set("792:792")
     .build();
     let private_credentials = EmailAccountBuilder::new(
         &COMPANY_EMAIL_SERVER,
@@ -266,8 +264,8 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
     .uid_set("6000:*")
     .build();
     inboxes.insert("company", company_credentials);
-    // inboxes.insert("private", private_credentials);
-    // inboxes.insert("s", s_credentials);
+    inboxes.insert("private", private_credentials);
+    inboxes.insert("s", s_credentials);
 
     // Process emails for all inboxes
     if let Ok(email_details) = process_all_inboxes(inboxes).await {
