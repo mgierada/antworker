@@ -148,10 +148,10 @@ fn get_email_details(
 fn get_and_save_attachments<S: Read + Write>(
     email_details: &Vec<EmailDetails>,
     imap_session: &mut Session<TlsStream<S>>,
-    save_location: &String,
 ) -> () {
     for email in email_details.iter() {
         let uid = email.uid;
+        let save_location = setup_save_location(&email.subject).unwrap();
         let message_stream = imap_session.uid_fetch(uid.to_string(), "BODY[]").unwrap();
         for fetch_result in &message_stream {
             let body = fetch_result.body().unwrap();
@@ -162,10 +162,10 @@ fn get_and_save_attachments<S: Read + Write>(
                 let content_type = &part.ctype;
                 match content_type.mimetype.as_str() {
                     "application/pdf" => {
-                        handle_pure_pdf(uid, content_type, part, save_location).unwrap();
+                        handle_pure_pdf(uid, content_type, part, &save_location).unwrap();
                     }
                     "multipart/mixed" => {
-                        handle_mixed(uid, part, save_location).unwrap();
+                        handle_mixed(uid, part, &save_location).unwrap();
                     }
                     _ => {}
                 }
@@ -228,8 +228,7 @@ async fn process_inbox(
     let messages = fetch_emails(&mut imap_session, &email_account.uid_set)?;
     let rules = define_rules();
     let email_details = get_email_details(&messages, &rules)?;
-    let save_location = setup_save_location()?;
-    get_and_save_attachments(&email_details, &mut imap_session, &save_location);
+    get_and_save_attachments(&email_details, &mut imap_session);
     imap_session.logout()?;
     Ok(email_details)
 }
