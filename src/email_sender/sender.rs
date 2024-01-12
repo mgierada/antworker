@@ -63,7 +63,6 @@ pub fn send_emails(is_dry_run: bool) {
     if is_dry_run {
         let att = get_saved_files()
             .iter()
-            
             .map(|filepath| filepath.to_string())
             .collect::<Vec<String>>()
             .join("\n     ");
