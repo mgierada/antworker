@@ -63,9 +63,10 @@ pub fn send_emails(is_dry_run: bool) {
     if is_dry_run {
         let att = get_saved_files()
             .iter()
+            
             .map(|filepath| filepath.to_string())
             .collect::<Vec<String>>()
-            .join("\n    ");
+            .join("\n     ");
         println!(
             "The total {} emails will be sent with the following attachments: \n    {}",
             n_attachments, att
