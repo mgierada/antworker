@@ -55,16 +55,16 @@ fn add_attachments() -> Vec<SinglePart> {
     attachments
 }
 
-pub fn send_emails() {
+pub fn send_emails(is_dry_run: bool) {
     let attachments = add_attachments();
     attachments
         .iter()
         .for_each(|attachment| {
-            send_email(attachment.clone());
+            send_email(attachment.clone(), is_dry_run);
         });
 }
 
-pub fn send_email(attachment: SinglePart) -> () {
+pub fn send_email(attachment: SinglePart, is_dry_run: bool) -> () {
     let email = Message::builder()
         .to(format_email(TARGET_EMAIL.as_str()).parse().unwrap())
         .from(format_email(FROM_EMAIL.as_str()).parse().unwrap())
@@ -76,16 +76,20 @@ pub fn send_email(attachment: SinglePart) -> () {
                         .header(ContentType::TEXT_HTML)
                         .body(String::from("W zalaczeniu faktury za ostatni miesiac.")),
                 )
-                // .singlepart(attachments[1].clone())
                 .singlepart(attachment),
         )
         .unwrap();
 
-    let creds = Credentials::new(COMPANY_EMAIL.to_owned(), COMPANY_EMAIL_PASSWORD.to_owned());
+    if is_dry_run {
+        println!("Dry run - Email not sent.");
+        return;
+    }
+
+    let from = Credentials::new(COMPANY_EMAIL.to_owned(), COMPANY_EMAIL_PASSWORD.to_owned());
     // Open a remote connection to gmail
     let mailer = SmtpTransport::relay(SMTP_TARGET_SERVER.as_str())
         .unwrap()
-        .credentials(creds)
+        .credentials(from)
         .build();
     // Send the email
     match mailer.send(&email) {
@@ -93,3 +97,4 @@ pub fn send_email(attachment: SinglePart) -> () {
         Err(e) => panic!("Could not send email: {e:?}"),
     }
 }
+

@@ -1,6 +1,7 @@
 use crate::email_parser::parser::process_emails;
 use clap::{Parser, Subcommand};
 use dotenv::dotenv;
+use email_sender::sender::send_emails;
 use lazy_static::lazy_static;
 
 use std::env::var;
@@ -9,10 +10,10 @@ extern crate native_tls;
 
 pub mod datemath;
 pub mod email_parser;
+pub mod email_sender;
+pub mod factories;
 pub mod io;
 pub mod rules;
-pub mod factories;
-pub mod email_sender;
 
 lazy_static! {
     pub static ref COMPANY_EMAIL_SERVER: String =
@@ -41,8 +42,7 @@ lazy_static! {
         var("PRIVATE_EMAIL_PASSWORD").expect("PRIVATE_EMAIL_PASSWORD must be set.");
 }
 lazy_static! {
-    pub static ref S_EMAIL: String =
-        var("S_EMAIL").expect("COMPANY_PRIVATE must be set.");
+    pub static ref S_EMAIL: String = var("S_EMAIL").expect("COMPANY_PRIVATE must be set.");
 }
 lazy_static! {
     pub static ref S_EMAIL_PASSWORD: String =
@@ -68,10 +68,11 @@ enum Commands {
         about = "Fetch all emails and save attachments in designated location for the current month."
     )]
     Emails,
-    #[command(
-        about = "Send all invoices for the current month to the designated email address."
-    )]
-    Send
+    #[command(about = "Send all invoices for the current month to the designated email address.")]
+    Send {
+        #[arg(short, long, action, help = "Dry run, do not send emails.")]
+        dry_run: bool,
+    },
 }
 
 #[tokio::main]
@@ -82,8 +83,11 @@ async fn main() {
         Commands::Emails {} => {
             process_emails().await.unwrap();
         }
-        Commands::Send {} => {
-            email_sender::sender::send_emails()
+        Commands::Send { dry_run } => {
+            if dry_run {
+                return send_emails(true);
+            }
+            send_emails(false)
         }
     }
 }
