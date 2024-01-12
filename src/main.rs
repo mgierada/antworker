@@ -85,6 +85,7 @@ async fn main() {
         }
         Commands::Send { dry_run } => {
             if dry_run {
+                println!("Dry run, not sending emails.");
                 return send_emails(true);
             }
             send_emails(false)

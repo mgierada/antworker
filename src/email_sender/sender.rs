@@ -1,3 +1,4 @@
+use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use lazy_static::lazy_static;
 use lettre::{
     message::{header::ContentType, Attachment, MultiPart, SinglePart},
@@ -6,10 +7,7 @@ use lettre::{
 };
 use std::{env::var, fs};
 
-use crate::{
-    io::files::get_saved_files,
-    COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD,
-};
+use crate::{io::files::get_saved_files, COMPANY_EMAIL, COMPANY_EMAIL_PASSWORD};
 
 lazy_static! {
     pub static ref TARGET_EMAIL: String = var("TARGET_EMAIL").expect("TARGET_EMAIL must be set.");
@@ -57,14 +55,29 @@ fn add_attachments() -> Vec<SinglePart> {
 
 pub fn send_emails(is_dry_run: bool) {
     let attachments = add_attachments();
-    attachments
-        .iter()
-        .for_each(|attachment| {
-            send_email(attachment.clone(), is_dry_run);
-        });
+    let n_attachments = attachments.len();
+    let pb = ProgressBar::new(n_attachments as u64);
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.green} [{bar:40.red}] ({pos}/{len})").unwrap(),
+    );
+    if is_dry_run {
+        let att = get_saved_files()
+            .iter()
+            .map(|filepath| filepath.to_string())
+            .collect::<Vec<String>>()
+            .join("\n    ");
+        println!(
+            "The total {} emails will be sent with the following attachments: \n    {}",
+            n_attachments, att
+        );
+        return;
+    }
+    attachments.iter().progress_with(pb).for_each(|attachment| {
+        send_email(attachment.clone());
+    });
 }
 
-pub fn send_email(attachment: SinglePart, is_dry_run: bool) -> () {
+pub fn send_email(attachment: SinglePart) -> () {
     let email = Message::builder()
         .to(format_email(TARGET_EMAIL.as_str()).parse().unwrap())
         .from(format_email(FROM_EMAIL.as_str()).parse().unwrap())
@@ -80,11 +93,6 @@ pub fn send_email(attachment: SinglePart, is_dry_run: bool) -> () {
         )
         .unwrap();
 
-    if is_dry_run {
-        println!("Dry run - Email not sent.");
-        return;
-    }
-
     let from = Credentials::new(COMPANY_EMAIL.to_owned(), COMPANY_EMAIL_PASSWORD.to_owned());
     // Open a remote connection to gmail
     let mailer = SmtpTransport::relay(SMTP_TARGET_SERVER.as_str())
@@ -97,4 +105,3 @@ pub fn send_email(attachment: SinglePart, is_dry_run: bool) -> () {
         Err(e) => panic!("Could not send email: {e:?}"),
     }
 }
-
