@@ -1,12 +1,13 @@
 use chrono::{DateTime, Utc};
-use std::fmt::{self, Debug, Formatter};
 use imap::{
     types::{Fetch, ZeroCopy},
     Session,
 };
+use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use mailparse::{self, parse_mail, ParsedContentType, ParsedMail};
 use native_tls::TlsStream;
 use quoted_printable::{decode, ParseMode};
+use std::fmt::{self, Debug, Formatter};
 use std::{
     collections::HashMap,
     fs::File,
@@ -149,7 +150,16 @@ fn get_and_save_attachments<S: Read + Write>(
     email_details: &Vec<EmailDetails>,
     imap_session: &mut Session<TlsStream<S>>,
 ) -> () {
-    for email in email_details.iter() {
+    let email_len = email_details.len();
+    // Provide a custom bar style
+    let pb = ProgressBar::new(email_len as u64);
+    pb.set_style(
+        ProgressStyle::with_template(
+            "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] ({pos}/{len}, ETA {eta})",
+        )
+        .unwrap(),
+    );
+    for email in email_details.iter().progress_with(pb) { 
         let uid = email.uid;
         let save_location = setup_save_location(&email.subject).unwrap();
         let message_stream = imap_session.uid_fetch(uid.to_string(), "BODY[]").unwrap();
@@ -233,7 +243,6 @@ async fn process_inbox(
     Ok(email_details)
 }
 
-// Define a function to process emails for multiple inboxes
 pub async fn process_all_inboxes(
     inboxes: HashMap<&str, EmailAccountBuilder>,
 ) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
