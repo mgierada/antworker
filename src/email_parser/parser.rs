@@ -3,11 +3,11 @@ use imap::{
     types::{Fetch, ZeroCopy},
     Session,
 };
-use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
+use indicatif::{ProgressBar, ProgressIterator, ProgressStyle, MultiProgress};
 use mailparse::{self, parse_mail, ParsedContentType, ParsedMail};
 use native_tls::TlsStream;
 use quoted_printable::{decode, ParseMode};
-use std::fmt::{self, Debug, Formatter};
+use std::{fmt::{self, Debug, Formatter}, time::Duration};
 use std::{
     collections::HashMap,
     fs::File,
@@ -149,17 +149,18 @@ fn get_email_details(
 fn get_and_save_attachments<S: Read + Write>(
     email_details: &Vec<EmailDetails>,
     imap_session: &mut Session<TlsStream<S>>,
+    m: &MultiProgress,
 ) -> () {
     let email_len = email_details.len();
     // Provide a custom bar style
-    let pb = ProgressBar::new(email_len as u64);
-    pb.set_style(
+    let pb_2 = m.add(ProgressBar::new(email_len as u64));
+    pb_2.set_style(
         ProgressStyle::with_template(
             "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] ({pos}/{len}, ETA {eta})",
         )
         .unwrap(),
     );
-    for email in email_details.iter().progress_with(pb) { 
+    for email in email_details.iter().progress_with(pb_2) {
         let uid = email.uid;
         let save_location = setup_save_location(&email.subject).unwrap();
         let message_stream = imap_session.uid_fetch(uid.to_string(), "BODY[]").unwrap();
@@ -230,15 +231,15 @@ fn handle_pure_pdf(
     Ok(())
 }
 
-// Define a function to fetch emails for a given set of credentials
 async fn process_inbox(
     email_account: &EmailAccountBuilder,
+    m: &MultiProgress,
 ) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
     let mut imap_session = connect(email_account).await?;
     let messages = fetch_emails(&mut imap_session, &email_account.uid_set)?;
     let rules = define_rules();
     let email_details = get_email_details(&messages, &rules)?;
-    get_and_save_attachments(&email_details, &mut imap_session);
+    get_and_save_attachments(&email_details, &mut imap_session, &m);
     imap_session.logout()?;
     Ok(email_details)
 }
@@ -246,13 +247,32 @@ async fn process_inbox(
 pub async fn process_all_inboxes(
     inboxes: HashMap<&str, EmailAccountBuilder>,
 ) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
+    let m = MultiProgress::new();
+    let pb = m.add(ProgressBar::new_spinner());
+    pb.enable_steady_tick(Duration::from_millis(120));
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.blue} {msg}")
+            .unwrap()
+            // For more spinners check out the cli-spinners project:
+            // https://github.com/sindresorhus/cli-spinners/blob/master/spinners.json
+            .tick_strings(&[
+                "▹▹▹▹▹",
+                "▸▹▹▹▹",
+                "▹▸▹▹▹",
+                "▹▹▸▹▹",
+                "▹▹▹▸▹",
+                "▹▹▹▹▸",
+                "▪▪▪▪▪",
+            ]),
+    );
     let mut all_email_details = Vec::new();
     for (inbox_name, credentials) in inboxes.iter() {
-        println!("📥 Processing inbox: {}", inbox_name);
-        let email_details = process_inbox(credentials).await?;
+        let inbox_name_str = format!("📥 Processing inbox: {}", inbox_name);
+        pb.set_message(inbox_name_str);
+        let email_details = process_inbox(credentials, &m).await?;
         all_email_details.extend(email_details);
-        println!("🏁 Done processing inbox: {}", inbox_name)
     }
+    pb.finish_with_message("🏁Done processing emails");
     Ok(all_email_details)
 }
 
