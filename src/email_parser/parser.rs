@@ -3,16 +3,19 @@ use imap::{
     types::{Fetch, ZeroCopy},
     Session,
 };
-use indicatif::{ProgressBar, ProgressIterator, ProgressStyle, MultiProgress};
+use indicatif::{MultiProgress, ProgressBar, ProgressIterator, ProgressStyle};
 use mailparse::{self, parse_mail, ParsedContentType, ParsedMail};
 use native_tls::TlsStream;
 use quoted_printable::{decode, ParseMode};
-use std::{fmt::{self, Debug, Formatter}, time::Duration};
 use std::{
     collections::HashMap,
     fs::File,
     io::{Read, Write},
     path::Path,
+};
+use std::{
+    fmt::{self, Debug, Formatter},
+    time::Duration,
 };
 
 use crate::{
@@ -155,10 +158,7 @@ fn get_and_save_attachments<S: Read + Write>(
     // Provide a custom bar style
     let pb_2 = m.add(ProgressBar::new(email_len as u64));
     pb_2.set_style(
-        ProgressStyle::with_template(
-            "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] ({pos}/{len}, ETA {eta})",
-        )
-        .unwrap(),
+        ProgressStyle::with_template("{spinner:.green} [{bar:40.red}] ({pos}/{len})").unwrap(),
     );
     for email in email_details.iter().progress_with(pb_2) {
         let uid = email.uid;
@@ -224,10 +224,6 @@ fn handle_pure_pdf(
     file.write_all(&binary_content)
         .map_err(|e| eprintln!("Failed to write to file: {}", e))
         .expect("Failed to write to file");
-    println!(
-        "    💾 Attachment saved to file: {}",
-        full_path_save_location.to_str().unwrap()
-    );
     Ok(())
 }
 
