@@ -1,7 +1,9 @@
 use std::fs;
 
-use crate::{io::files::get_saved_files, datemath::date::{get_current_year_str, get_current_month_str}};
-
+use crate::{
+    datemath::date::{get_current_month_str, get_current_year_str},
+    io::files::get_saved_files,
+};
 
 #[test]
 fn test_get_saved_files() {
@@ -16,9 +18,9 @@ fn test_get_saved_files() {
         current_year.as_str(),
         current_month.as_str()
     );
-    
+
     // Set the ROOT_SAVE_LOCATION_PATH environment variable for testing
-    std::env::set_var("ROOT_SAVE_LOCATION_PATH", temp_dir_path.to_string());   // Create a temporary directory for testing
+    std::env::set_var("ROOT_SAVE_LOCATION_PATH", temp_dir_path.to_string()); 
 
     // Create some files in the temporary directory
     fs::create_dir_all(save_location.to_string()).unwrap();

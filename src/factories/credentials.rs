@@ -1,4 +1,4 @@
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct EmailAccountBuilder {
     pub server: String,
     pub port: u16,
