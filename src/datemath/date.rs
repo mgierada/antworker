@@ -15,7 +15,7 @@ pub fn get_current_month_year() -> Option<(i32, u32)> {
     return Some((now.year(), now.month()));
 }
 
-fn get_previous_month_year() -> (i32, u32) {
+pub fn get_previous_month_year() -> (i32, u32) {
     let now: DateTime<Utc> = Utc::now();
     let (year, month) = now
         .checked_sub_signed(chrono::Duration::days(now.day() as i64))

@@ -25,4 +25,3 @@ indicatif = "0.17.7"
 
 [dev-dependencies]
 mockito = "1.2.0"
-
