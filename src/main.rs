@@ -1,6 +1,6 @@
-use crate::email_parser::parser::process_emails;
 use clap::{Parser, Subcommand};
 use dotenv::dotenv;
+use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
 use lazy_static::lazy_static;
 
