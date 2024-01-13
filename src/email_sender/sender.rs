@@ -48,8 +48,8 @@ pub fn send_emails(is_dry_run: bool) {
             .collect::<Vec<String>>()
             .join("\n     ");
         println!(
-            "The total {} emails will be sent with the following attachments: \n    {}",
-            n_attachments, att
+            "The total {} emails will be sent to {} with the following attachments: \n    {}",
+            n_attachments, TARGET_EMAIL.to_string(), att
         );
         return;
     }
@@ -59,7 +59,7 @@ pub fn send_emails(is_dry_run: bool) {
     });
 }
 
-pub fn send_email(attachment: SinglePart) -> () {
+fn send_email(attachment: SinglePart) -> () {
     let email = Message::builder()
         .to(format_email(TARGET_EMAIL.as_str()).parse().unwrap())
         .from(format_email(FROM_EMAIL.as_str()).parse().unwrap())
