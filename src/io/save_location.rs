@@ -30,7 +30,7 @@ pub fn get_save_location_invoices() -> String {
     save_location
 }
 
-fn get_save_location_monthly_balance() -> String {
+pub fn get_save_location_monthly_balance() -> String {
     let (previous_month, previous_year) = get_previous_month_year_str();
     let save_location = format!(
         "{}/{}/{}",
@@ -41,7 +41,7 @@ fn get_save_location_monthly_balance() -> String {
     save_location
 }
 
-fn maybe_create_save_location(save_location: &String) -> Result<(), std::io::Error> {
+pub fn maybe_create_save_location(save_location: &String) -> Result<(), std::io::Error> {
     if !fs::metadata(&save_location).is_ok() {
         fs::create_dir_all(&save_location)?;
     }
