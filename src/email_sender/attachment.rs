@@ -4,7 +4,7 @@ use lettre::message::{header::ContentType, Attachment, SinglePart};
 
 use crate::io::files::get_saved_files;
 
-fn add_attachment(filepath: &String) -> SinglePart {
+pub fn add_attachment(filepath: &String) -> SinglePart {
     let filename = filepath
         .split("/")
         .collect::<Vec<&str>>()
