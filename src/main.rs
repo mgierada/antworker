@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use command::open::open_save_location_invoices;
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -8,6 +9,7 @@ use std::env::var;
 extern crate imap;
 extern crate native_tls;
 
+pub mod command;
 pub mod datemath;
 pub mod email_parser;
 pub mod email_sender;
@@ -73,6 +75,8 @@ enum Commands {
         #[arg(short, long, action, help = "Dry run, do not send emails.")]
         dry_run: bool,
     },
+    #[command(about = "Open the designated location for the current month.")]
+    Open,
 }
 
 #[tokio::main]
@@ -89,6 +93,9 @@ async fn main() {
                 return send_emails(true);
             }
             send_emails(false)
+        }
+        Commands::Open {} => {
+            open_save_location_invoices();
         }
     }
 }
