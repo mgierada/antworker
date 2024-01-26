@@ -17,6 +17,13 @@ lazy_static! {
 #[test]
 fn test_get_saved_files() {
     let temp_dir_path = TEMP_DIR.path().to_str().unwrap().to_string();
+    // std::env::set_var(
+    //     "ROOT_SAVE_LOCATION_PATH",
+    //     Path::new("temp_dir_attachments")
+    //         .to_str()
+    //         .unwrap()
+    //         .to_string(),
+    // );
     let current_year = get_current_year_str();
     let current_month = get_current_month_str();
     let save_location = format!(
@@ -50,6 +57,15 @@ fn test_get_save_location_invoices() {
         TEMP_DIR.path().to_str().unwrap().to_string(),
     );
 
+
+    // std::env::set_var(
+    //     "ROOT_SAVE_LOCATION_PATH",
+    //     Path::new("temp_dir_attachments")
+    //         .to_str()
+    //         .unwrap()
+    //         .to_string(),
+    // );
+    //
     let current_year = get_current_year_str();
     let current_month = get_current_month_str();
     let expected_save_location = format!(
