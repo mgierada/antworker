@@ -32,7 +32,7 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
         &S_EMAIL,
         &S_EMAIL_PASSWORD,
     )
-    .uid_set("6000:*")
+    .uid_set("1:*")
     .build();
     inboxes.insert("company", company_credentials);
     inboxes.insert("private", private_credentials);
