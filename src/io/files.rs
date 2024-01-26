@@ -6,7 +6,6 @@ const IGNORE_LIST: [&'static str; 3] = [".", "..", ".DS_Store"];
 
 pub fn get_saved_files() -> Vec<String> {
     let save_location = get_save_location_invoices();
-    println!("save_location: {}", save_location);
     let paths = fs::read_dir(save_location).unwrap();
     let mut files = Vec::new();
 

@@ -69,7 +69,7 @@ fn send_email(attachment: SinglePart) -> () {
                 .singlepart(
                     SinglePart::builder()
                         .header(ContentType::TEXT_HTML)
-                        .body(String::from("W zalaczeniu faktury za ostatni miesiac.")),
+                        .body(String::from("W zalaczeniu faktura za miesiac styczen 2024.")),
                 )
                 .singlepart(attachment),
         )
@@ -83,7 +83,7 @@ fn send_email(attachment: SinglePart) -> () {
         .build();
     
     match mailer.send(&email) {
-        Ok(_) => println!("Email sent successfully!"),
+        Ok(_) => (),
         Err(e) => panic!("Could not send email: {e:?}"),
     }
 }
