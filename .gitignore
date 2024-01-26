@@ -16,4 +16,6 @@ Cargo.lock
 .env
 
 .DS_Store
-```
+
+history.txt
+*.db
