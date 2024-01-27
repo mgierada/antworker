@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
-use db::email::store_emails;
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -102,7 +101,7 @@ async fn main() {
             open_save_location_invoices();
         }
         Commands::Db {} => {
-            store_emails().await.unwrap();
+            println!("Db command not implemented yet.");
         }
     }
 }

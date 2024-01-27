@@ -8,13 +8,13 @@ use crate::email_parser::parser::EmailDetails;
 #[derive(Debug, Serialize)]
 struct EmailMonthly<'a> {
     year_month: &'a str,
-    emails: Vec<Email<'a>>,
+    emails: Emails<'a>,
 }
 
 #[derive(Debug, Serialize)]
-struct Email<'a> {
-    mailbox: &'a str,
-    details: EmailDetails,
+pub struct Emails<'a> {
+    pub mailbox: &'a str,
+    pub details: &'a Vec<EmailDetails>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,13 +23,13 @@ struct Record {
     id: Thing,
 }
 
-pub async fn store_emails() -> surrealdb::Result<()> {
+pub async fn store_emails<'a>(emails: Emails<'a>) -> surrealdb::Result<()> {
     let db = connect().await?;
     let created: Vec<Record> = db
         .create("emails")
         .content(EmailMonthly{
             year_month: &&get_current_year_month_str(),
-            emails: vec![],
+            emails, 
         })
         .await?;
     dbg!(created);
