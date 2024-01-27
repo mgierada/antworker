@@ -40,23 +40,29 @@ pub fn send_emails(is_dry_run: bool) {
     pb.set_style(
         ProgressStyle::with_template("{spinner:.green} [{bar:40.red}] ({pos}/{len})").unwrap(),
     );
-    
+
     if is_dry_run {
-        let att = get_saved_files()
-            .iter()
-            .map(|filepath| filepath.to_string())
-            .collect::<Vec<String>>()
-            .join("\n     ");
-        println!(
-            "The total {} emails will be sent to {} with the following attachments: \n    {}",
-            n_attachments, TARGET_EMAIL.to_string(), att
-        );
-        return;
+        dry_run(n_attachments);
     }
-    
+
     attachments.iter().progress_with(pb).for_each(|attachment| {
         send_email(attachment.clone());
     });
+}
+
+fn dry_run(n_attachments: usize) -> () {
+    let att = get_saved_files()
+        .iter()
+        .map(|filepath| filepath.to_string())
+        .collect::<Vec<String>>()
+        .join("\n     ");
+    println!(
+        "The total {} emails will be sent to {} with the following attachments: \n    {}",
+        n_attachments,
+        TARGET_EMAIL.to_string(),
+        att
+    );
+    return;
 }
 
 fn send_email(attachment: SinglePart) -> () {
@@ -66,22 +72,20 @@ fn send_email(attachment: SinglePart) -> () {
         .subject(SUBJECT.as_str())
         .multipart(
             MultiPart::mixed()
-                .singlepart(
-                    SinglePart::builder()
-                        .header(ContentType::TEXT_HTML)
-                        .body(String::from("W zalaczeniu faktura za miesiac styczen 2024.")),
-                )
+                .singlepart(SinglePart::builder().header(ContentType::TEXT_HTML).body(
+                    String::from("W zalaczeniu faktura za miesiac styczen 2024."),
+                ))
                 .singlepart(attachment),
         )
         .unwrap();
 
     let from = Credentials::new(COMPANY_EMAIL.to_owned(), COMPANY_EMAIL_PASSWORD.to_owned());
-    
+
     let mailer = SmtpTransport::relay(SMTP_TARGET_SERVER.as_str())
         .unwrap()
         .credentials(from)
         .build();
-    
+
     match mailer.send(&email) {
         Ok(_) => (),
         Err(e) => panic!("Could not send email: {e:?}"),
