@@ -13,9 +13,7 @@ use crate::rules::define::FilterRules;
 
 #[derive(Default, Serialize, Deserialize, Clone)]
 pub struct EmailDetails {
-    // pub subject: &'a str,
     pub subject: String,
-    // pub from: Vec< &'a str>,
     pub from: Vec<String>,
     pub date: DateTime<Utc>,
     pub uid: u32,
