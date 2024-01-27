@@ -6,6 +6,7 @@ use surrealdb::opt::auth::Root;
 use surrealdb::sql::Thing;
 use surrealdb::Surreal;
 
+use crate::datemath::date::get_current_year_month_str;
 use crate::email_parser::parser::EmailDetails;
 
 #[derive(Debug, Serialize)]
@@ -66,37 +67,13 @@ pub async fn connect() -> Result<Surreal<surrealdb::engine::remote::ws::Client>,
 
 pub async fn create() -> surrealdb::Result<()> {
     let db = connect().await?;
-    // Create a new person with a random id
     let created: Vec<Record> = db
         .create("send_history")
         .content(HistoryPerYearMonth {
-            title: "Founder & CEO",
-            name: Name {
-                first: "Tobie",
-                last: "Morgan Hitchcock",
-            },
-            marketing: true,
+            year_month: &get_current_year_month_str(),
+            send_history: vec![],
         })
         .await?;
     dbg!(created);
-
-    // Update a person record with a specific id
-    let updated: Option<Record> = db
-        .update(("person", "jaime"))
-        .merge(Responsibility { marketing: true })
-        .await?;
-    dbg!(updated);
-
-    // Select all people records
-    let people: Vec<Record> = db.select("person").await?;
-    dbg!(people);
-
-    // Perform a custom advanced query
-    let groups = db
-        .query("SELECT marketing, count() FROM type::table($table) GROUP BY marketing")
-        .bind(("table", "person"))
-        .await?;
-    dbg!(groups);
-
     Ok(())
 }

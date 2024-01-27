@@ -10,6 +10,11 @@ pub fn get_current_month_str() -> String {
     now.format("%m").to_string()
 }
 
+pub fn get_current_year_month_str() -> String {
+    let now: DateTime<Utc> = chrono::Utc::now();
+    now.format("%Y_%m").to_string()
+}
+
 pub fn get_current_month_year() -> Option<(i32, u32)> {
     let now: DateTime<Utc> = chrono::Utc::now();
     return Some((now.year(), now.month()));
