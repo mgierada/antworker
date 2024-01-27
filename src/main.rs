@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
+use db::email::{get_emails, store_emails};
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -11,12 +12,12 @@ extern crate native_tls;
 
 pub mod command;
 pub mod datemath;
+pub mod db;
 pub mod email_parser;
 pub mod email_sender;
 pub mod factories;
 pub mod io;
 pub mod rules;
-pub mod db;
 
 lazy_static! {
     pub static ref COMPANY_EMAIL_SERVER: String =
@@ -101,7 +102,7 @@ async fn main() {
             open_save_location_invoices();
         }
         Commands::Db {} => {
-            println!("Db command not implemented yet.");
+            get_emails().await.unwrap();
         }
     }
 }

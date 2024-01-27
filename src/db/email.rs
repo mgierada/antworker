@@ -5,16 +5,16 @@ use crate::datemath::date::get_current_year_month_str;
 use crate::db::connect::connect;
 use crate::email_parser::parser::EmailDetails;
 
-#[derive(Debug, Serialize)]
-struct EmailMonthly<'a> {
-    year_month: &'a str,
-    emails: Emails<'a>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmailMonthly {
+    year_month: String,
+    emails: Emails,
 }
 
-#[derive(Debug, Serialize)]
-pub struct Emails<'a> {
-    pub mailbox: &'a str,
-    pub details: &'a Vec<EmailDetails>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Emails {
+    pub mailbox: String,
+    pub details: Vec<EmailDetails>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,15 +23,22 @@ struct Record {
     id: Thing,
 }
 
-pub async fn store_emails<'a>(emails: Emails<'a>) -> surrealdb::Result<()> {
+pub async fn store_emails(emails: Emails) -> surrealdb::Result<()> {
     let db = connect().await?;
     let created: Vec<Record> = db
         .create("emails")
-        .content(EmailMonthly{
-            year_month: &&get_current_year_month_str(),
-            emails, 
+        .content(EmailMonthly {
+            year_month: get_current_year_month_str(),
+            emails,
         })
         .await?;
     dbg!(created);
     Ok(())
+}
+
+pub async fn get_emails() -> surrealdb::Result<Vec<EmailMonthly>> {
+    let db = connect().await?;
+    let emails: Vec<EmailMonthly> = db.select("emails").await?;
+    dbg!(&emails);
+    Ok(emails)
 }

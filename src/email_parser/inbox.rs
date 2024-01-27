@@ -67,11 +67,11 @@ pub async fn process_all_inboxes(
     let mut all_email_details = Vec::new();
     for (inbox_name, credentials) in inboxes.iter() {
         let inbox_name_str = format!("📥 Processing inbox: {}", inbox_name);
-        pb.set_message(inbox_name_str);
+        pb.set_message(inbox_name_str.clone());
         let email_details = process_inbox(credentials, &m).await?;
         store_emails(Emails {
-            mailbox: &inbox_name,
-            details: &email_details,
+            mailbox: inbox_name_str.clone(),
+            details: email_details.clone(),
         })
         .await?;
         all_email_details.extend(email_details);
