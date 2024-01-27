@@ -1,31 +1,8 @@
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
 use std::env::var;
 use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
-use surrealdb::sql::Thing;
 use surrealdb::Surreal;
-
-use crate::datemath::date::get_current_year_month_str;
-use crate::email_parser::parser::EmailDetails;
-
-#[derive(Debug, Serialize)]
-struct EmailSendHistory<'a> {
-    year_month: &'a str,
-    send_history: Vec<SendHistory<'a>>,
-}
-
-#[derive(Debug, Serialize)]
-struct SendHistory<'a> {
-    mailbox: &'a str,
-    email_details: EmailDetails,
-}
-
-#[derive(Debug, Deserialize)]
-struct Record {
-    #[allow(dead_code)]
-    id: Thing,
-}
 
 lazy_static! {
     static ref DB_HOST: String = var("DB_HOST").expect("DB_HOST must be set.");
@@ -63,17 +40,4 @@ pub async fn connect() -> Result<Surreal<surrealdb::engine::remote::ws::Client>,
         .use_db(DB_NAME.to_string())
         .await?;
     Ok(db)
-}
-
-pub async fn create() -> surrealdb::Result<()> {
-    let db = connect().await?;
-    let created: Vec<Record> = db
-        .create("emails_send_history")
-        .content(EmailSendHistory {
-            year_month: &get_current_year_month_str(),
-            send_history: vec![],
-        })
-        .await?;
-    dbg!(created);
-    Ok(())
 }
