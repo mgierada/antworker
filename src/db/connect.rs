@@ -10,7 +10,7 @@ use crate::datemath::date::get_current_year_month_str;
 use crate::email_parser::parser::EmailDetails;
 
 #[derive(Debug, Serialize)]
-struct HistoryPerYearMonth<'a> {
+struct EmailSendHistory<'a> {
     year_month: &'a str,
     send_history: Vec<SendHistory<'a>>,
 }
@@ -68,8 +68,8 @@ pub async fn connect() -> Result<Surreal<surrealdb::engine::remote::ws::Client>,
 pub async fn create() -> surrealdb::Result<()> {
     let db = connect().await?;
     let created: Vec<Record> = db
-        .create("send_history")
-        .content(HistoryPerYearMonth {
+        .create("emails_send_history")
+        .content(EmailSendHistory {
             year_month: &get_current_year_month_str(),
             send_history: vec![],
         })
