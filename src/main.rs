@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
+use db::email::get_emails;
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -11,6 +12,7 @@ extern crate native_tls;
 
 pub mod command;
 pub mod datemath;
+pub mod db;
 pub mod email_parser;
 pub mod email_sender;
 pub mod factories;
@@ -77,6 +79,8 @@ enum Commands {
     },
     #[command(about = "Open the designated location for the current month.")]
     Open,
+    #[command(about = "Perform database operations.")]
+    Db,
 }
 
 #[tokio::main]
@@ -96,6 +100,9 @@ async fn main() {
         }
         Commands::Open {} => {
             open_save_location_invoices();
+        }
+        Commands::Db {} => {
+            get_emails().await.unwrap();
         }
     }
 }

@@ -5,12 +5,13 @@ use imap::{
 };
 use native_tls::TlsStream;
 use quoted_printable::{decode, ParseMode};
+use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Formatter};
 use std::io::{Read, Write};
 
 use crate::rules::define::FilterRules;
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub struct EmailDetails {
     pub subject: String,
     pub from: Vec<String>,
