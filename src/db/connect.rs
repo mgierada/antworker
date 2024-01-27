@@ -6,22 +6,18 @@ use surrealdb::opt::auth::Root;
 use surrealdb::sql::Thing;
 use surrealdb::Surreal;
 
+use crate::email_parser::parser::EmailDetails;
+
 #[derive(Debug, Serialize)]
-struct Name<'a> {
-    first: &'a str,
-    last: &'a str,
+struct HistoryPerYearMonth<'a> {
+    year_month: &'a str,
+    send_history: Vec<SendHistory<'a>>,
 }
 
 #[derive(Debug, Serialize)]
-struct Person<'a> {
-    title: &'a str,
-    name: Name<'a>,
-    marketing: bool,
-}
-
-#[derive(Debug, Serialize)]
-struct Responsibility {
-    marketing: bool,
+struct SendHistory<'a> {
+    mailbox: &'a str,
+    email_details: EmailDetails,
 }
 
 #[derive(Debug, Deserialize)]
@@ -72,8 +68,8 @@ pub async fn create() -> surrealdb::Result<()> {
     let db = connect().await?;
     // Create a new person with a random id
     let created: Vec<Record> = db
-        .create("person")
-        .content(Person {
+        .create("send_history")
+        .content(HistoryPerYearMonth {
             title: "Founder & CEO",
             name: Name {
                 first: "Tobie",

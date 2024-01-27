@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
-use db::connect::{connect, create};
+use db::connect::create;
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
