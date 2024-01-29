@@ -30,12 +30,19 @@ lazy_static! {
 
 pub async fn connect() -> Result<Surreal<surrealdb::engine::remote::ws::Client>, surrealdb::Error> {
     let connect_url = format!("{}:{}", *DB_HOST, *DB_PORT);
-    let db = Surreal::new::<Ws>(connect_url).await?;
+    let db = Surreal::new::<Ws>(connect_url).await.unwrap_or_else(|e| {
+        panic!(
+            "Could not connect to the database.\nError:\n{:?}",
+            e.to_string()
+        )
+    });
     db.signin(Root {
         username: &DB_USERNAME,
         password: &DB_PASSWORD,
     })
-    .await?;
+    .await.unwrap_or_else(
+        |e| panic!("Could not sign in to the database. Error: {:?}", e),
+    );
     db.use_ns(DB_NAMESPACE.to_string())
         .use_db(DB_NAME.to_string())
         .await?;
