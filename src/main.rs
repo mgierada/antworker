@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
-use db::email::get_emails;
+use db::email::{get_emails, get_emails_current_year_month};
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -102,7 +102,8 @@ async fn main() {
             open_save_location_invoices();
         }
         Commands::Db {} => {
-            get_emails().await.unwrap();
+            // get_emails().await.unwrap();
+            get_emails_current_year_month().await.unwrap();
         }
     }
 }
