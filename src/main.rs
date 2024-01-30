@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
-use db::email::{get_emails, get_emails_current_year_month};
+use db::email::{get_emails, get_emails_current_year_month, get_emails_current_year_month_mailbox};
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -80,7 +80,17 @@ enum Commands {
     #[command(about = "Open the designated location for the current month.")]
     Open,
     #[command(about = "Perform database operations.")]
-    Db,
+    Db {
+        #[arg(
+            short,
+            long,
+            action,
+            help = "Specify the mailbox to fetch historical emails from"
+        )]
+        mailbox: Option<String>,
+        #[arg(short, long, action, help = "Return all stored emails history")]
+        all: bool,
+    },
 }
 
 #[tokio::main]
@@ -101,9 +111,17 @@ async fn main() {
         Commands::Open {} => {
             open_save_location_invoices();
         }
-        Commands::Db {} => {
-            // get_emails().await.unwrap();
-            get_emails_current_year_month().await.unwrap();
+        Commands::Db { all, mailbox } => {
+            if all {
+                get_emails().await.unwrap();
+            }
+            if mailbox.is_some() {
+                get_emails_current_year_month_mailbox(&mailbox.unwrap())
+                    .await
+                    .unwrap();
+            } else {
+                get_emails_current_year_month().await.unwrap()
+            }
         }
     }
 }

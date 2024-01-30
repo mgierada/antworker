@@ -42,7 +42,7 @@ pub async fn get_emails() -> surrealdb::Result<Vec<EmailMonthly>> {
     Ok(emails)
 }
 
-pub async fn get_emails_current_year_month() -> surrealdb::Result<Vec<EmailMonthly>> {
+pub async fn get_emails_current_year_month() -> surrealdb::Result<()> {
     let db = connect().await?;
     let year_month = get_current_year_month_str();
     let sql = "
@@ -50,18 +50,27 @@ pub async fn get_emails_current_year_month() -> surrealdb::Result<Vec<EmailMonth
 ";
     let mut result = db
         .query(sql)
-        .bind((
-            "table",
-            "emails",
-        ))
-        .bind((
-            "year_month",
-            year_month,
-        ))
+        .bind(("table", "emails"))
+        .bind(("year_month", year_month))
         .await?;
-    // Get the first result from the first query
-    // let created: Option<EmailMonthly> = result.take(1)?;
     let emails: Vec<EmailMonthly> = result.take(0)?;
     dbg!(&emails);
-    Ok(emails)
+    Ok(())
+}
+
+pub async fn get_emails_current_year_month_mailbox(mailbox: &str) -> surrealdb::Result<()> {
+    let db = connect().await?;
+    let year_month = get_current_year_month_str();
+    let sql = "
+    SELECT * FROM type::table($table) WHERE year_month = $year_month AND emails.mailbox = $mailbox;
+    ";
+    let mut result = db
+        .query(sql)
+        .bind(("table", "emails"))
+        .bind(("year_month", year_month))
+        .bind(("mailbox", mailbox))
+        .await?;
+    let emails: Vec<EmailMonthly> = result.take(0)?;
+    dbg!(&emails);
+    Ok(())
 }
