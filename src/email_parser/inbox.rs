@@ -32,20 +32,20 @@ async fn connect(
 
 async fn process_inbox(
     email_account: &EmailAccountBuilder,
-    m: &MultiProgress,
+    multi_progress: &MultiProgress,
 ) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
     let mut imap_session = connect(email_account).await?;
     let messages = fetch_emails(&mut imap_session, &email_account.uid_set)?;
     let rules = define_rules();
     let email_details = get_email_details(&messages, &rules)?;
-    get_and_save_attachments(&email_details, &mut imap_session, &m);
+    get_and_save_attachments(&email_details, &mut imap_session, &multi_progress);
     imap_session.logout()?;
     Ok(email_details)
 }
 
 pub async fn process_all_inboxes(
     inboxes: HashMap<&str, EmailAccountBuilder>,
-) -> Result<Vec<EmailDetails>, Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let m = MultiProgress::new();
     let pb = m.add(ProgressBar::new_spinner());
     pb.enable_steady_tick(Duration::from_millis(120));
@@ -64,18 +64,16 @@ pub async fn process_all_inboxes(
                 "▪▪▪▪▪",
             ]),
     );
-    let mut all_email_details = Vec::new();
     for (inbox_name, credentials) in inboxes.iter() {
         let inbox_name_str = format!("📥 Processing inbox: {}", inbox_name);
         pb.set_message(inbox_name_str.clone());
         let email_details = process_inbox(credentials, &m).await?;
         store_emails(Emails {
-            mailbox: inbox_name_str.clone(),
+            mailbox: inbox_name.to_string(),
             details: email_details.clone(),
         })
         .await?;
-        all_email_details.extend(email_details);
     }
-    pb.finish_with_message("🏁Done processing emails");
-    Ok(all_email_details)
+    pb.finish_with_message("🏁 Done processing emails");
+    Ok(())
 }
