@@ -5,7 +5,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use native_tls::TlsStream;
 
 use crate::{
-    db::email::{store_emails, Emails},
+    db::email::{store_emails, Mailbox, MailboxDetails},
     factories::credentials::EmailAccountBuilder,
     rules::define::define_rules,
 };
@@ -69,13 +69,25 @@ pub async fn process_all_inboxes(
         let inbox_name_str = format!("📥 Processing inbox: {}", inbox_name);
         pb.set_message(inbox_name_str.clone());
         let email_details = process_inbox(credentials, &m).await?;
-        store_emails(Emails {
-            mailbox: inbox_name_str.clone(),
-            details: email_details.clone(),
-        })
-        .await?;
+        let items = get_items(email_details.clone(), inbox_name.to_string());
+        store_emails(items).await?;
         all_email_details.extend(email_details);
     }
     pb.finish_with_message("🏁Done processing emails");
     Ok(all_email_details)
+}
+
+fn get_items(email_details: Vec<EmailDetails>, inbox_name: String) -> Vec<Mailbox> {
+    let mut items = Vec::new();
+    let mailbox_details = MailboxDetails {
+        name: inbox_name,
+        emails: email_details,
+    };
+    dbg!(&mailbox_details);
+    let mut mailbox = Mailbox {
+        mailbox: Vec::new(),
+    };
+    mailbox.mailbox.push(mailbox_details);
+    items.push(mailbox);
+    items
 }

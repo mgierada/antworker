@@ -30,14 +30,13 @@ pub struct MailboxDetails {
 
 pub async fn store_emails(items: Vec<Mailbox>) -> surrealdb::Result<()> {
     let db = connect().await?;
-    let created: Vec<Record> = db
+    let _: Vec<Record> = db
         .create("emails")
         .content(EmailMonthly {
             year_month: get_current_year_month_str(),
             items,
         })
         .await?;
-    dbg!(created);
     Ok(())
 }
 
