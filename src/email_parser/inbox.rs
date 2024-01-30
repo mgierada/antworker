@@ -5,7 +5,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use native_tls::TlsStream;
 
 use crate::{
-    db::email::{store_emails, Mailbox, MailboxDetails},
+    db::email::{store_emails, Emails},
     factories::credentials::EmailAccountBuilder,
     rules::define::define_rules,
 };
@@ -44,7 +44,8 @@ async fn process_inbox(
 }
 
 pub async fn process_all_inboxes(
-    inboxes: HashMap<&str, EmailAccountBuilder>) -> Result<(), Box<dyn std::error::Error>> {
+    inboxes: HashMap<&str, EmailAccountBuilder>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let m = MultiProgress::new();
     let pb = m.add(ProgressBar::new_spinner());
     pb.enable_steady_tick(Duration::from_millis(120));
@@ -67,24 +68,12 @@ pub async fn process_all_inboxes(
         let inbox_name_str = format!("📥 Processing inbox: {}", inbox_name);
         pb.set_message(inbox_name_str.clone());
         let email_details = process_inbox(credentials, &m).await?;
-        let items = get_items(email_details.clone(), inbox_name.to_string());
-        store_emails(items).await?;
+        store_emails(Emails {
+            mailbox: inbox_name.to_string(),
+            details: email_details.clone(),
+        })
+        .await?;
     }
-    pb.finish_with_message("🏁Done processing emails");
+    pb.finish_with_message("🏁 Done processing emails");
     Ok(())
-}
-
-fn get_items(email_details: Vec<EmailDetails>, inbox_name: String) -> Vec<Mailbox> {
-    let mut items = Vec::new();
-    let mailbox_details = MailboxDetails {
-        name: inbox_name,
-        emails: email_details,
-    };
-    dbg!(&mailbox_details);
-    let mut mailbox = Mailbox {
-        mailbox: Vec::new(),
-    };
-    mailbox.mailbox.push(mailbox_details);
-    items.push(mailbox);
-    items
 }

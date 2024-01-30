@@ -13,28 +13,23 @@ struct Record {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmailMonthly {
-    pub year_month: String,
-    pub items: Vec<Mailbox>,
+    year_month: String,
+    emails: Emails,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Mailbox {
-    pub mailbox: Vec<MailboxDetails>,
+pub struct Emails {
+    pub mailbox: String,
+    pub details: Vec<EmailDetails>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MailboxDetails {
-    pub name: String,
-    pub emails: Vec<EmailDetails>,
-}
-
-pub async fn store_emails(items: Vec<Mailbox>) -> surrealdb::Result<()> {
+pub async fn store_emails(emails: Emails) -> surrealdb::Result<()> {
     let db = connect().await?;
     let _: Vec<Record> = db
         .create("emails")
         .content(EmailMonthly {
             year_month: get_current_year_month_str(),
-            items,
+            emails,
         })
         .await?;
     Ok(())

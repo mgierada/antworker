@@ -34,15 +34,11 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
     )
     .uid_set("1:*")
     .build();
-    // inboxes.insert("company", company_credentials);
+    inboxes.insert("company", company_credentials);
     inboxes.insert("private", private_credentials);
-    // inboxes.insert("s", s_credentials);
-
-    // Process emails for all inboxes
-    if let Ok(email_details) = process_all_inboxes(inboxes).await {
-        println!("All emails processed successfully: \n{:?}", email_details);
-    } else {
-        eprintln!("Error processing emails for one or more inboxes");
-    }
+    inboxes.insert("s", s_credentials);
+    process_all_inboxes(inboxes).await.unwrap_or_else(|e| {
+        eprintln!("Error processing all inboxes: {:?}", e);
+    });
     Ok(())
 }
