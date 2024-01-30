@@ -13,11 +13,11 @@ use std::{
 pub fn get_and_save_attachments<S: Read + Write>(
     email_details: &Vec<EmailDetails>,
     imap_session: &mut Session<TlsStream<S>>,
-    m: &MultiProgress,
+    multi_progress: &MultiProgress,
 ) -> () {
     let email_len = email_details.len();
     // Provide a custom bar style
-    let pb_2 = m.add(ProgressBar::new(email_len as u64));
+    let pb_2 = multi_progress.add(ProgressBar::new(email_len as u64));
     pb_2.set_style(
         ProgressStyle::with_template("{spinner:.green} [{bar:40.red}] ({pos}/{len})").unwrap(),
     );
