@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use command::open::open_save_location_invoices;
+use command::open::{open_save_location_income_invoices, open_save_location_invoices};
 use db::email::{get_emails, get_emails_current_year_month, get_emails_current_year_month_mailbox};
 use dotenv::dotenv;
 use email_parser::main::process_emails;
@@ -86,6 +86,8 @@ enum Commands {
             help = "Define year and month of interest, e.g. 2024_01"
         )]
         year_month: Option<String>,
+        #[arg(help = "Specify the type of invoices (income/outcome)")]
+        invoice_type: String,
     },
     #[command(about = "Perform database operations.")]
     Db {
@@ -116,8 +118,14 @@ async fn main() {
             }
             send_emails(false)
         }
-        Commands::Open { year_month } => {
-            open_save_location_invoices(&year_month.unwrap_or("".to_string()));
+        Commands::Open { year_month, invoice_type } => {
+            match invoice_type.as_str() {
+                "income" => open_save_location_income_invoices(&year_month.unwrap_or("".to_string())),
+                "outcome" => open_save_location_invoices(&year_month.unwrap_or("".to_string())),
+                _ => println!("Unknown invoice type")
+            }
+                
+                
         }
         Commands::Db { all, mailbox } => {
             if all {

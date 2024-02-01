@@ -1,13 +1,20 @@
 use lazy_static::lazy_static;
 use std::{env::var, fs};
 
-use crate::datemath::date::{get_current_year_month_str, get_current_year_str, get_previous_month_year_str};
+use crate::datemath::date::{
+    get_current_year_month_str, get_current_year_str, get_previous_month_year_str,
+};
 
 lazy_static! {
-    pub static ref ROOT_SAVE_LOCATION_PATH: String =
-        var("ROOT_SAVE_LOCATION_PATH").expect("ROOT_SAVE_LOCATION_PATH must be set.");
+    pub static ref ROOT_SAVE_LOCATION_OUTCOME_INVOICES: String =
+        var("ROOT_SAVE_LOCATION_OUTCOME_INVOICES")
+            .expect("ROOT_SAVE_LOCATION_OUTCOME_INVOICES must be set.");
 }
-
+lazy_static! {
+    pub static ref ROOT_SAVE_LOCATION_INCOME_INVOICES: String =
+        var("ROOT_SAVE_LOCATION_INCOME_INVOICES")
+            .expect("ROOT_SAVE_LOCATION_INCOME_INVOICES must be set.");
+}
 lazy_static! {
     pub static ref ROOT_MONTHLY_SUMMARY_BALANCE: String =
         var("ROOT_MONTHLY_SUMMARY_BALANCE").expect("ROOT_MONTHLY_SUMMARY_BALANCE must be set.");
@@ -22,9 +29,19 @@ pub fn get_save_location_invoices() -> String {
     let current_year_month = get_current_year_month_str();
     let save_location = format!(
         "{}/{}/{}",
-        ROOT_SAVE_LOCATION_PATH.as_str(),
+        ROOT_SAVE_LOCATION_OUTCOME_INVOICES.as_str(),
         current_year.as_str(),
         current_year_month.as_str(),
+    );
+    save_location
+}
+
+pub fn get_save_location_income_invoices() -> String {
+    let current_year = get_current_year_str();
+    let save_location = format!(
+        "{}/{}",
+        ROOT_SAVE_LOCATION_INCOME_INVOICES.as_str(),
+        current_year.as_str(),
     );
     save_location
 }
