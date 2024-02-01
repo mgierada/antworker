@@ -78,7 +78,15 @@ enum Commands {
         dry_run: bool,
     },
     #[command(about = "Open the designated location for the current month.")]
-    Open,
+    Open {
+        #[arg(
+            short,
+            long,
+            action,
+            help = "Define year and month of interest, e.g. 2024_01"
+        )]
+        year_month: Option<String>,
+    },
     #[command(about = "Perform database operations.")]
     Db {
         #[arg(
@@ -108,8 +116,8 @@ async fn main() {
             }
             send_emails(false)
         }
-        Commands::Open {} => {
-            open_save_location_invoices();
+        Commands::Open { year_month } => {
+            open_save_location_invoices(&year_month.unwrap_or("".to_string()));
         }
         Commands::Db { all, mailbox } => {
             if all {
