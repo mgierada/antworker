@@ -24,7 +24,7 @@ lazy_static! {
         var("MONTHLY_BALANCE_SUBJECT").expect("MONTHLY_BALANCE_SUBJECT must be set.");
 }
 
-pub fn get_save_location_invoices() -> String {
+pub fn get_save_location_outcome_invoices() -> String {
     let current_year = get_current_year_str();
     let current_year_month = get_current_year_month_str();
     let save_location = format!(
@@ -70,7 +70,7 @@ pub fn setup_save_location(subject: &String) -> Result<String, std::io::Error> {
         maybe_create_save_location(&save_location).unwrap();
         return Ok(save_location);
     } else {
-        let save_location = get_save_location_invoices();
+        let save_location = get_save_location_outcome_invoices();
         maybe_create_save_location(&save_location).unwrap();
         return Ok(save_location);
     }

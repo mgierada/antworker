@@ -1,5 +1,5 @@
 use crate::io::save_location::{
-    get_save_location_income_invoices, get_save_location_invoices,
+    get_save_location_income_invoices, get_save_location_outcome_invoices,
     ROOT_SAVE_LOCATION_INCOME_INVOICES, ROOT_SAVE_LOCATION_OUTCOME_INVOICES,
 };
 use std::process::Command;
@@ -19,7 +19,7 @@ pub fn open_save_location_invoices(year_month_or_year: &str, is_income: bool) {
         }
         false => {
             let dir_path = match year_month_or_year {
-                "" => get_save_location_invoices().to_string(),
+                "" => get_save_location_outcome_invoices().to_string(),
                 _ => {
                     let year = year_month_or_year.split("_").next().unwrap();
                     format!(
