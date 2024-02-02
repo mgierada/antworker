@@ -156,19 +156,16 @@ async fn main() {
         } => {
             if all {
                 get_emails().await.unwrap();
+                return;
             }
-            if mailbox.is_some() {
-                if year_month.is_some() {
-                    get_emails_current_year_month_mailbox(&mailbox.unwrap(), &year_month.unwrap())
-                        .await
-                        .unwrap();
-                } else {
-                    get_emails_current_year_month_mailbox(&mailbox.unwrap(), "")
-                        .await
-                        .unwrap();
-                }
-            } else {
-                get_emails_current_year_month().await.unwrap()
+            match (mailbox, year_month) {
+                (Some(mb), Some(ym)) => get_emails_current_year_month_mailbox(&mb, &ym)
+                    .await
+                    .unwrap(),
+                (Some(mb), None) => get_emails_current_year_month_mailbox(&mb, "")
+                    .await
+                    .unwrap(),
+                _ => get_emails_current_year_month().await.unwrap(),
             }
         }
     }
