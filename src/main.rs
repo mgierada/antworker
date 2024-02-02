@@ -4,6 +4,7 @@ use db::email::{get_emails, get_emails_current_year_month, get_emails_current_ye
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
+use enums::OpenCommand;
 use lazy_static::lazy_static;
 
 use std::env::var;
@@ -15,6 +16,7 @@ pub mod datemath;
 pub mod db;
 pub mod email_parser;
 pub mod email_sender;
+pub mod enums;
 pub mod factories;
 pub mod io;
 pub mod rules;
@@ -121,15 +123,25 @@ async fn main() {
         Commands::Open {
             year_month_or_year,
             invoice_type,
-        } => match invoice_type.as_str() {
-            "income" => {
-                open_save_location_invoices(&year_month_or_year.unwrap_or("".to_string()), true)
+        } => {
+            let command = match invoice_type.as_str() {
+                "income" => OpenCommand::Income,
+                "outcome" => OpenCommand::Outcome,
+                _ => {
+                    println!("Unknown invoice type. Allowed values: income, outcome");
+                    return;
+                }
+            };
+            match command {
+                OpenCommand::Income => {
+                    open_save_location_invoices(&year_month_or_year.unwrap_or("".to_string()), true)
+                }
+                OpenCommand::Outcome => open_save_location_invoices(
+                    &year_month_or_year.unwrap_or("".to_string()),
+                    false,
+                ),
             }
-            "outcome" => {
-                open_save_location_invoices(&year_month_or_year.unwrap_or("".to_string()), false)
-            }
-            _ => println!("Unknown invoice type. Allowed values: income, outcome"),
-        },
+        }
         Commands::Db { all, mailbox } => {
             if all {
                 get_emails().await.unwrap();
