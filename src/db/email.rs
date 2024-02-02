@@ -5,6 +5,8 @@ use crate::datemath::date::get_current_year_month_str;
 use crate::db::connect::connect;
 use crate::email_parser::parser::EmailDetails;
 
+use super::enums::Tables;
+
 #[derive(Debug, Deserialize)]
 struct Record {
     #[allow(dead_code)]
@@ -26,7 +28,7 @@ pub struct Emails {
 pub async fn store_emails(emails: Emails) -> surrealdb::Result<()> {
     let db = connect().await?;
     let _: Vec<Record> = db
-        .create("emails")
+        .create(Tables::Emails.to_string())
         .content(EmailMonthly {
             year_month: get_current_year_month_str(),
             emails,
@@ -37,7 +39,7 @@ pub async fn store_emails(emails: Emails) -> surrealdb::Result<()> {
 
 pub async fn get_emails() -> surrealdb::Result<Vec<EmailMonthly>> {
     let db = connect().await?;
-    let emails: Vec<EmailMonthly> = db.select("emails").await?;
+    let emails: Vec<EmailMonthly> = db.select(Tables::Emails.to_string()).await?;
     dbg!(&emails);
     Ok(emails)
 }
@@ -50,7 +52,7 @@ pub async fn get_emails_current_year_month() -> surrealdb::Result<()> {
 ";
     let mut result = db
         .query(sql)
-        .bind(("table", "emails"))
+        .bind(("table",Tables::Emails.to_string()))
         .bind(("year_month", year_month))
         .await?;
     let emails: Vec<EmailMonthly> = result.take(0)?;
@@ -66,7 +68,7 @@ pub async fn get_emails_current_year_month_mailbox(mailbox: &str) -> surrealdb::
     ";
     let mut result = db
         .query(sql)
-        .bind(("table", "emails"))
+        .bind(("table", Tables::Emails.to_string()))
         .bind(("year_month", year_month))
         .bind(("mailbox", mailbox))
         .await?;
