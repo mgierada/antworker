@@ -64,13 +64,11 @@ pub async fn get_emails_current_year_month_mailbox(
     mailbox: &str,
     year_month: &str,
 ) -> surrealdb::Result<()> {
-    println!("year_month: {}", year_month);
     let db = connect().await?;
     let year_month_str = match year_month {
         "" => get_current_year_month_str(),
         _ => year_month.to_string(),
     };
-    println!("year_month_str: {}", year_month_str);
     let sql = "
     SELECT * FROM type::table($table) WHERE year_month = $year_month AND emails.mailbox = $mailbox;
     ";
