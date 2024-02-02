@@ -100,6 +100,13 @@ enum Commands {
             help = "Specify the mailbox to fetch historical emails from"
         )]
         mailbox: Option<String>,
+        #[arg(
+            short,
+            long,
+            action,
+            help = "Define year and month of interest, e.g. 2024_01"
+        )]
+        year_month: Option<String>,
         #[arg(short, long, action, help = "Return all stored emails history")]
         all: bool,
     },
@@ -142,14 +149,24 @@ async fn main() {
                 ),
             }
         }
-        Commands::Db { all, mailbox } => {
+        Commands::Db {
+            all,
+            mailbox,
+            year_month,
+        } => {
             if all {
                 get_emails().await.unwrap();
             }
             if mailbox.is_some() {
-                get_emails_current_year_month_mailbox(&mailbox.unwrap())
-                    .await
-                    .unwrap();
+                if year_month.is_some() {
+                    get_emails_current_year_month_mailbox(&mailbox.unwrap(), &year_month.unwrap())
+                        .await
+                        .unwrap();
+                } else {
+                    get_emails_current_year_month_mailbox(&mailbox.unwrap(), "")
+                        .await
+                        .unwrap();
+                }
             } else {
                 get_emails_current_year_month().await.unwrap()
             }

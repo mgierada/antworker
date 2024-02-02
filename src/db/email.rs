@@ -52,7 +52,7 @@ pub async fn get_emails_current_year_month() -> surrealdb::Result<()> {
 ";
     let mut result = db
         .query(sql)
-        .bind(("table",Tables::Emails.to_string()))
+        .bind(("table", Tables::Emails.to_string()))
         .bind(("year_month", year_month))
         .await?;
     let emails: Vec<EmailMonthly> = result.take(0)?;
@@ -60,16 +60,24 @@ pub async fn get_emails_current_year_month() -> surrealdb::Result<()> {
     Ok(())
 }
 
-pub async fn get_emails_current_year_month_mailbox(mailbox: &str) -> surrealdb::Result<()> {
+pub async fn get_emails_current_year_month_mailbox(
+    mailbox: &str,
+    year_month: &str,
+) -> surrealdb::Result<()> {
+    println!("year_month: {}", year_month);
     let db = connect().await?;
-    let year_month = get_current_year_month_str();
+    let year_month_str = match year_month {
+        "" => get_current_year_month_str(),
+        _ => year_month.to_string(),
+    };
+    println!("year_month_str: {}", year_month_str);
     let sql = "
     SELECT * FROM type::table($table) WHERE year_month = $year_month AND emails.mailbox = $mailbox;
     ";
     let mut result = db
         .query(sql)
         .bind(("table", Tables::Emails.to_string()))
-        .bind(("year_month", year_month))
+        .bind(("year_month", year_month_str))
         .bind(("mailbox", mailbox))
         .await?;
     let emails: Vec<EmailMonthly> = result.take(0)?;
