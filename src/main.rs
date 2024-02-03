@@ -113,7 +113,7 @@ enum Commands {
         #[arg(short, long, action, help = "Return all stored emails history")]
         all: bool,
         #[arg(help = "Remove emials")]
-        remove: String,
+        remove: Option<String>,
     },
 }
 
@@ -160,9 +160,14 @@ async fn main() {
             year_month,
             remove,
         } => {
-            if remove == "remove" {
-                remove_emails().await.unwrap();
-                return;
+            match remove {
+                Some(remove) => {
+                    if remove == "remove" {
+                        remove_emails().await.unwrap();
+                        return;
+                    }
+                }
+                None => {}
             }
             if all {
                 get_emails().await.unwrap();
