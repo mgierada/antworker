@@ -1,6 +1,6 @@
 use crate::datemath::date::get_current_year_month_str;
 use crate::db::connect::connect;
-use crate::db::email::EmailMonthly;
+use crate::db::email::{EmailMonthly, Record};
 use crate::db::enums::Tables;
 
 pub async fn get_emails() -> surrealdb::Result<Vec<EmailMonthly>> {
@@ -47,4 +47,19 @@ pub async fn get_emails_current_year_month_mailbox(
     let emails: Vec<EmailMonthly> = result.take(0)?;
     dbg!(&emails);
     Ok(())
+}
+
+pub async fn get_emails_id_for_current_year_month() -> surrealdb::Result<Vec<String>> {
+    let db = connect().await?;
+    let year_month = get_current_year_month_str();
+    let sql = "SELECT id FROM type::table($table) WHERE year_month = $year_month;";
+    let mut result = db
+        .query(sql)
+        .bind(("table", Tables::Emails.to_string()))
+        .bind(("year_month", year_month))
+        .await?;
+    let raw_ids: Vec<Record> = result.take(0)?;
+    let ids: Vec<String> = raw_ids.iter().map(|x| x.id.id.to_string()).collect();
+    dbg!(&ids);
+    Ok(ids)
 }
