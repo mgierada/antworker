@@ -14,12 +14,14 @@ pub struct EmailMonthly {
     pub id: Thing,
     pub year_month: String,
     pub emails: Emails,
+    pub updated_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateEmailMonthly {
     pub year_month: String,
     pub emails: Emails,
+    pub updated_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
