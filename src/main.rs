@@ -1,8 +1,8 @@
+use crate::crud::get_email::EmailDatabase;
+use crate::crud::get_email::MyDatabaseConnection;
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
-use crud::{delete_email::remove_emails, get_email::{
-    get_emails, get_emails_current_year_month, get_emails_current_year_month_mailbox,
-}};
+use crud::delete_email::remove_emails;
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -120,6 +120,7 @@ enum Commands {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
+    let db_conn = MyDatabaseConnection;
     let args = Cli::parse();
     match args.command {
         Commands::Emails {} => {
@@ -170,19 +171,19 @@ async fn main() {
                 None => {}
             }
             if all {
-                get_emails().await.unwrap();
+                db_conn.get_emails().await.unwrap();
                 return;
             }
             match (mailbox, year_month) {
                 (Some(mailbox), Some(year_month)) => {
-                    get_emails_current_year_month_mailbox(&mailbox, &year_month)
+                    db_conn.get_emails_current_year_month_mailbox(&mailbox, &year_month)
                         .await
                         .unwrap()
                 }
-                (Some(mailbox), None) => get_emails_current_year_month_mailbox(&mailbox, "")
+                (Some(mailbox), None) => db_conn.get_emails_current_year_month_mailbox(&mailbox, "")
                     .await
                     .unwrap(),
-                _ => get_emails_current_year_month().await.unwrap(),
+                _ => db_conn.get_emails_current_year_month().await.unwrap(),
             }
         }
     }
