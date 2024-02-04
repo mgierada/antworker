@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
-use db::email::{get_emails, get_emails_current_year_month, get_emails_current_year_month_mailbox};
+use crud::{delete_email::remove_emails, get_email::{
+    get_emails, get_emails_current_year_month, get_emails_current_year_month_mailbox,
+}};
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -12,6 +14,7 @@ extern crate imap;
 extern crate native_tls;
 
 pub mod command;
+pub mod crud;
 pub mod datemath;
 pub mod db;
 pub mod email_parser;
@@ -109,6 +112,8 @@ enum Commands {
         year_month: Option<String>,
         #[arg(short, long, action, help = "Return all stored emails history")]
         all: bool,
+        #[arg(help = "Remove emials")]
+        remove: Option<String>,
     },
 }
 
@@ -153,16 +158,28 @@ async fn main() {
             all,
             mailbox,
             year_month,
+            remove,
         } => {
+            match remove {
+                Some(remove) => {
+                    if remove == "remove" {
+                        remove_emails().await.unwrap();
+                        return;
+                    }
+                }
+                None => {}
+            }
             if all {
                 get_emails().await.unwrap();
                 return;
             }
             match (mailbox, year_month) {
-                (Some(mb), Some(ym)) => get_emails_current_year_month_mailbox(&mb, &ym)
-                    .await
-                    .unwrap(),
-                (Some(mb), None) => get_emails_current_year_month_mailbox(&mb, "")
+                (Some(mailbox), Some(year_month)) => {
+                    get_emails_current_year_month_mailbox(&mailbox, &year_month)
+                        .await
+                        .unwrap()
+                }
+                (Some(mailbox), None) => get_emails_current_year_month_mailbox(&mailbox, "")
                     .await
                     .unwrap(),
                 _ => get_emails_current_year_month().await.unwrap(),

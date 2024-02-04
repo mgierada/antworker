@@ -5,9 +5,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use native_tls::TlsStream;
 
 use crate::{
-    db::email::{store_emails, Emails},
-    factories::credentials::EmailAccountBuilder,
-    rules::define::define_rules,
+    crud::create_email::store_emails, db::email:: Emails, factories::credentials::EmailAccountBuilder, rules::define::define_rules
 };
 
 use super::{

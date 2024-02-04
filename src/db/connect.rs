@@ -48,3 +48,4 @@ pub async fn connect() -> Result<Surreal<surrealdb::engine::remote::ws::Client>,
         .await?;
     Ok(db)
 }
+
