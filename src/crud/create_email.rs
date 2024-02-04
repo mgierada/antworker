@@ -12,6 +12,7 @@ use super::get_email::get_email_id_for_current_year_month_by_mailbox;
 pub async fn store_emails(emails: Emails) -> surrealdb::Result<()> {
     let db = connect().await?;
     let existing_email_id = get_email_id_for_current_year_month_by_mailbox(&emails.mailbox).await?;
+    let updated_at = chrono::Local::now().to_rfc3339();
     match existing_email_id {
         Some(existing_email_id) => {
             println!("existing_email_id: {:?}", existing_email_id);
@@ -20,7 +21,7 @@ pub async fn store_emails(emails: Emails) -> surrealdb::Result<()> {
                 .content(CreateEmailMonthly {
                     year_month: get_current_year_month_str(),
                     emails,
-                    updated_at: chrono::Local::now().to_rfc3339(),
+                    updated_at,
                 })
                 .await?;
         }
@@ -30,22 +31,10 @@ pub async fn store_emails(emails: Emails) -> surrealdb::Result<()> {
                 .content(CreateEmailMonthly {
                     year_month: get_current_year_month_str(),
                     emails,
-                    updated_at: chrono::Local::now().to_rfc3339(),
+                    updated_at,
                 })
                 .await?;
         }
     }
-
-    // let _: Vec<Record> = db
-    //     .create(Tables::Emails.to_string())
-    //     .content(CreateEmailMonthly {
-    //         year_month: get_current_year_month_str(),
-    //         emails,
-    //         updated_at: chrono::Local::now().to_rfc3339(),
-    //     })
-    //     .await?;
-    //
-    println!("Emails stored");
-
     Ok(())
 }
