@@ -73,12 +73,15 @@ fn handle_pure_pdf(
         .params
         .get("name")
         .cloned()
-        .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid));
+        .unwrap_or_else(|| format!("attachment_{}_unnamed.pdf", uid))
+        .replace(" ", "_")
+        .replace("/", "_");
     let full_path_save_location = Path::new(save_location).join(&filename);
     let binary_content = part
         .get_body_raw()
         .map_err(|e| eprintln!("Failed to get body raw: {}", e))
         .expect("Failed to get body raw");
+    println!("Saving attachment: {:?}", full_path_save_location);
     let mut file = File::create(full_path_save_location.clone())
         .map_err(|e| eprintln!("Failed to create file: {}", e))
         .expect("Failed to create file");
