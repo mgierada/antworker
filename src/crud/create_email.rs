@@ -15,9 +15,9 @@ pub async fn store_emails(emails: Emails) -> surrealdb::Result<()> {
     match existing_email_id {
         Some(existing_email_id) => {
             println!("existing_email_id: {:?}", existing_email_id);
-            let _: Option<Vec<Record>> = db
+            let _: Option<Record> = db
                 .update((Tables::Emails.to_string(), existing_email_id))
-                .merge(CreateEmailMonthly {
+                .content(CreateEmailMonthly {
                     year_month: get_current_year_month_str(),
                     emails,
                     updated_at: chrono::Local::now().to_rfc3339(),
@@ -44,6 +44,8 @@ pub async fn store_emails(emails: Emails) -> surrealdb::Result<()> {
     //         updated_at: chrono::Local::now().to_rfc3339(),
     //     })
     //     .await?;
+    //
+    println!("Emails stored");
 
     Ok(())
 }
