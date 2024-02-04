@@ -3,8 +3,10 @@ use crate::db::connect::connect;
 use crate::db::email::{EmailMonthly, Record};
 use crate::db::enums::Tables;
 
+use crate::db::connect::DatabaseConnection;
+
 #[allow(async_fn_in_trait)]
-pub trait EmailDatabase {
+pub trait GetEmailDbOps {
     async fn get_emails(&self) -> surrealdb::Result<Vec<EmailMonthly>>;
     async fn get_emails_current_year_month(&self) -> surrealdb::Result<()>;
     async fn get_emails_current_year_month_mailbox(
@@ -19,9 +21,7 @@ pub trait EmailDatabase {
     ) -> surrealdb::Result<Option<String>>;
 }
 
-pub struct MyDatabaseConnection;
-
-impl EmailDatabase for MyDatabaseConnection {
+impl GetEmailDbOps for DatabaseConnection {
     async fn get_emails(&self) -> surrealdb::Result<Vec<EmailMonthly>> {
         let db = connect().await?;
         let emails: Vec<EmailMonthly> = db.select(Tables::Emails.to_string()).await?;

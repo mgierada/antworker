@@ -1,6 +1,6 @@
-use crate::crud::get_email::EmailDatabase;
-use crate::crud::get_email::MyDatabaseConnection;
+use crate::crud::get_email::GetEmailDbOps;
 use crate::db::connect::connect;
+use crate::db::connect::DatabaseConnection;
 use crate::db::email::EmailMonthly;
 use crate::db::enums::Tables;
 
@@ -9,7 +9,7 @@ pub trait DeleteEmailDbOps {
     async fn remove_emails(&self) -> surrealdb::Result<()>;
 }
 
-impl DeleteEmailDbOps for MyDatabaseConnection {
+impl DeleteEmailDbOps for DatabaseConnection {
     async fn remove_emails(&self) -> surrealdb::Result<()> {
         let db = connect().await?;
         let ids_to_remove = &self.get_emails_ids_for_current_year_month().await?;

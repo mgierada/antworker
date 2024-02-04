@@ -4,8 +4,6 @@ use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::auth::Root;
 use surrealdb::Surreal;
 
-use super::email::EmailMonthly;
-
 lazy_static! {
     static ref DB_HOST: String = var("DB_HOST").expect("DB_HOST must be set.");
 }
@@ -42,28 +40,12 @@ pub async fn connect() -> Result<Surreal<surrealdb::engine::remote::ws::Client>,
         username: &DB_USERNAME,
         password: &DB_PASSWORD,
     })
-    .await.unwrap_or_else(
-        |e| panic!("Could not sign in to the database. Error: {:?}", e),
-    );
+    .await
+    .unwrap_or_else(|e| panic!("Could not sign in to the database. Error: {:?}", e));
     db.use_ns(DB_NAMESPACE.to_string())
         .use_db(DB_NAME.to_string())
         .await?;
     Ok(db)
 }
 
-
-
-trait EmailDatabase {
-    async fn get_emails(&self) -> surrealdb::Result<Vec<EmailMonthly>>;
-    async fn get_emails_current_year_month(&self) -> surrealdb::Result<()>;
-    async fn get_emails_current_year_month_mailbox(
-        &self,
-        mailbox: &str,
-        year_month: &str,
-    ) -> surrealdb::Result<()>;
-    async fn get_emails_ids_for_current_year_month(&self) -> surrealdb::Result<Vec<String>>;
-    async fn get_email_id_for_current_year_month_by_mailbox(
-        &self,
-        mailbox: &str,
-    ) -> surrealdb::Result<Option<String>>;
-}
+pub struct DatabaseConnection;

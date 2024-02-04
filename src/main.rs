@@ -1,9 +1,8 @@
-use crate::crud::get_email::EmailDatabase;
 use crate::crud::delete_email::DeleteEmailDbOps;
-use crate::crud::get_email::MyDatabaseConnection;
+use crate::crud::get_email::GetEmailDbOps;
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
-// use crud::delete_email::remove_emails;
+use db::connect::DatabaseConnection;
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -121,7 +120,7 @@ enum Commands {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let db_conn = MyDatabaseConnection;
+    let db_conn = DatabaseConnection;
     let args = Cli::parse();
     match args.command {
         Commands::Emails {} => {

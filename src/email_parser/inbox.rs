@@ -1,3 +1,4 @@
+use crate::crud::create_email::CreateEmailDbOps;
 use std::{collections::HashMap, time::Duration};
 
 use imap::Session;
@@ -5,7 +6,8 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use native_tls::TlsStream;
 
 use crate::{
-    crud::create_email::store_emails, db::email:: Emails, factories::credentials::EmailAccountBuilder, rules::define::define_rules
+    db::connect::DatabaseConnection, db::email::Emails,
+    factories::credentials::EmailAccountBuilder, rules::define::define_rules,
 };
 
 use super::{
@@ -44,14 +46,13 @@ async fn process_inbox(
 pub async fn process_all_inboxes(
     inboxes: HashMap<&str, EmailAccountBuilder>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let db_conn = DatabaseConnection;
     let m = MultiProgress::new();
     let pb = m.add(ProgressBar::new_spinner());
     pb.enable_steady_tick(Duration::from_millis(120));
     pb.set_style(
         ProgressStyle::with_template("{spinner:.blue} {msg}")
             .unwrap()
-            // For more spinners check out the cli-spinners project:
-            // https://github.com/sindresorhus/cli-spinners/blob/master/spinners.json
             .tick_strings(&[
                 "▹▹▹▹▹",
                 "▸▹▹▹▹",
@@ -66,11 +67,12 @@ pub async fn process_all_inboxes(
         let inbox_name_str = format!("📥 Processing inbox: {}", inbox_name);
         pb.set_message(inbox_name_str.clone());
         let email_details = process_inbox(credentials, &m).await?;
-        store_emails(Emails {
-            mailbox: inbox_name.to_string(),
-            details: email_details.clone(),
-        })
-        .await?;
+        db_conn
+            .store_emails(Emails {
+                mailbox: inbox_name.to_string(),
+                details: email_details.clone(),
+            })
+            .await?;
     }
     pb.finish_with_message("🏁 Done processing emails");
     Ok(())
