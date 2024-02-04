@@ -1,8 +1,9 @@
 use crate::crud::get_email::EmailDatabase;
+use crate::crud::delete_email::DeleteEmailDbOps;
 use crate::crud::get_email::MyDatabaseConnection;
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
-use crud::delete_email::remove_emails;
+// use crud::delete_email::remove_emails;
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
@@ -164,7 +165,7 @@ async fn main() {
             match remove {
                 Some(remove) => {
                     if remove == "remove" {
-                        remove_emails().await.unwrap();
+                        db_conn.remove_emails().await.unwrap();
                         return;
                     }
                 }
@@ -175,12 +176,12 @@ async fn main() {
                 return;
             }
             match (mailbox, year_month) {
-                (Some(mailbox), Some(year_month)) => {
-                    db_conn.get_emails_current_year_month_mailbox(&mailbox, &year_month)
-                        .await
-                        .unwrap()
-                }
-                (Some(mailbox), None) => db_conn.get_emails_current_year_month_mailbox(&mailbox, "")
+                (Some(mailbox), Some(year_month)) => db_conn
+                    .get_emails_current_year_month_mailbox(&mailbox, &year_month)
+                    .await
+                    .unwrap(),
+                (Some(mailbox), None) => db_conn
+                    .get_emails_current_year_month_mailbox(&mailbox, "")
                     .await
                     .unwrap(),
                 _ => db_conn.get_emails_current_year_month().await.unwrap(),
