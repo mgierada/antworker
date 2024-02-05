@@ -4,6 +4,7 @@ use crate::{
         connect::connect,
         email::{CreateEmailMonthly, Emails, Record},
         enums::Tables,
+        mailbox::CreateMailboxMonthly,
     },
 };
 
@@ -28,8 +29,23 @@ impl CreateEmailDbOps for DatabaseConnection {
                     .update((Tables::Emails.to_string(), existing_email_id))
                     .content(CreateEmailMonthly {
                         year_month: get_current_year_month_str(),
-                        emails,
-                        updated_at,
+                        emails: emails.clone(),
+                        updated_at: updated_at.clone(),
+                    })
+                    .await?;
+                let max_uid = emails
+                    .clone()
+                    .details
+                    .iter()
+                    .max_by_key(|x| x.uid)
+                    .unwrap()
+                    .uid;
+                let _: Vec<Record> = db
+                    .create(Tables::Mailbox.to_string())
+                    .content(CreateMailboxMonthly {
+                        year_month: get_current_year_month_str(),
+                        updated_at: updated_at.clone(),
+                        latest_uid: max_uid,
                     })
                     .await?;
             }
@@ -38,8 +54,23 @@ impl CreateEmailDbOps for DatabaseConnection {
                     .create(Tables::Emails.to_string())
                     .content(CreateEmailMonthly {
                         year_month: get_current_year_month_str(),
-                        emails,
-                        updated_at,
+                        emails: emails.clone(),
+                        updated_at: updated_at.clone(),
+                    })
+                    .await?;
+                let max_uid = emails
+                    .clone()
+                    .details
+                    .iter()
+                    .max_by_key(|x| x.uid)
+                    .unwrap()
+                    .uid;
+                let _: Vec<Record> = db
+                    .create(Tables::Mailbox.to_string())
+                    .content(CreateMailboxMonthly {
+                        year_month: get_current_year_month_str(),
+                        updated_at: updated_at.clone(),
+                        latest_uid: max_uid,
                     })
                     .await?;
             }

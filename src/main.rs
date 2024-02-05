@@ -1,12 +1,13 @@
 use crate::crud::delete_email::DeleteEmailDbOps;
 use crate::crud::get_email::GetEmailDbOps;
+use crate::crud::get_mailbox::GetMailboxDbOps;
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
 use db::connect::DatabaseConnection;
 use dotenv::dotenv;
 use email_parser::main::process_emails;
 use email_sender::sender::send_emails;
-use enums::OpenCommand;
+use enums::{DbAction, OpenCommand};
 use lazy_static::lazy_static;
 
 use std::env::var;
@@ -112,8 +113,8 @@ enum Commands {
         year_month: Option<String>,
         #[arg(short, long, action, help = "Return all stored emails history")]
         all: bool,
-        #[arg(help = "Remove emials")]
-        remove: Option<String>,
+        #[arg(help = "Define the action to perform on the database, e.g. get, remove")]
+        action: String,
     },
 }
 
@@ -156,20 +157,38 @@ async fn main() {
             }
         }
         Commands::Db {
+            action,
             all,
             mailbox,
             year_month,
-            remove,
         } => {
-            match remove {
-                Some(remove) => {
-                    if remove == "remove" {
-                        db_conn.remove_emails().await.unwrap();
-                        return;
-                    }
+            let action_item = match action.as_str() {
+                "get" => DbAction::Get,
+                "remove" => DbAction::Remove,
+                _ => {
+                    println!("Unknown action. Allowed values: get, remove");
+                    return;
                 }
-                None => {}
+            };
+            match action_item {
+                DbAction::Get => {
+                    db_conn.get_mailboxes().await.unwrap();
+                    return;
+                }
+                DbAction::Remove => {
+                    db_conn.remove_emails().await.unwrap();
+                }
             }
+
+            // match remove {
+            //     Some(remove) => {
+            //         if remove == "remove" {
+            //             db_conn.remove_emails().await.unwrap();
+            //             return;
+            //         }
+            //     }
+            //     None => {}
+            // }
             if all {
                 db_conn.get_emails().await.unwrap();
                 return;

@@ -24,7 +24,7 @@ pub struct CreateEmailMonthly {
     pub updated_at: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Emails {
     pub mailbox: String,
     pub details: Vec<EmailDetails>,
