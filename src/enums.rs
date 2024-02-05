@@ -4,6 +4,8 @@ pub enum OpenCommand {
 }
 
 pub enum DbAction {
-    Get,
-    Remove,
+    GetEmail,
+    RemoveEmail,
+    GetMailbox,
+    RemoveMailbox,
 }

@@ -3,6 +3,7 @@ use crate::crud::get_email::GetEmailDbOps;
 use crate::crud::get_mailbox::GetMailboxDbOps;
 use clap::{Parser, Subcommand};
 use command::open::open_save_location_invoices;
+use crud::delete_mailbox::DeleteMailboxDbOps;
 use db::connect::DatabaseConnection;
 use dotenv::dotenv;
 use email_parser::main::process_emails;
@@ -111,8 +112,6 @@ enum Commands {
             help = "Define year and month of interest, e.g. 2024_01"
         )]
         year_month: Option<String>,
-        #[arg(short, long, action, help = "Return all stored emails history")]
-        all: bool,
         #[arg(help = "Define the action to perform on the database, e.g. get, remove")]
         action: String,
     },
@@ -158,40 +157,34 @@ async fn main() {
         }
         Commands::Db {
             action,
-            all,
             mailbox,
             year_month,
         } => {
             let action_item = match action.as_str() {
-                "get" => DbAction::Get,
-                "remove" => DbAction::Remove,
+                "get-email" => DbAction::GetEmail,
+                "remove-email" => DbAction::RemoveEmail,
+                "get-mailbox" => DbAction::GetMailbox,
+                "remove-mailbox" => DbAction::RemoveMailbox,
                 _ => {
-                    println!("Unknown action. Allowed values: get, remove");
+                    println!("Unknown action. Allowed values: get-mailbox, remove-mailbox, get-email, remove-email");
                     return;
                 }
             };
             match action_item {
-                DbAction::Get => {
+                DbAction::GetEmail => {
+                    db_conn.get_emails().await.unwrap();
+                    return;
+                }
+                DbAction::RemoveEmail => {
+                    db_conn.remove_emails().await.unwrap();
+                }
+                DbAction::GetMailbox => {
                     db_conn.get_mailboxes().await.unwrap();
                     return;
                 }
-                DbAction::Remove => {
-                    db_conn.remove_emails().await.unwrap();
+                DbAction::RemoveMailbox => {
+                    db_conn.remove_mailbox().await.unwrap();
                 }
-            }
-
-            // match remove {
-            //     Some(remove) => {
-            //         if remove == "remove" {
-            //             db_conn.remove_emails().await.unwrap();
-            //             return;
-            //         }
-            //     }
-            //     None => {}
-            // }
-            if all {
-                db_conn.get_emails().await.unwrap();
-                return;
             }
             match (mailbox, year_month) {
                 (Some(mailbox), Some(year_month)) => db_conn
