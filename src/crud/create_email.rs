@@ -6,6 +6,7 @@ use crate::{
         enums::Tables,
         mailbox::CreateMailboxMonthly,
     },
+    email_parser::parser::EmailDetails,
 };
 
 use crate::crud::get_email::GetEmailDbOps;
@@ -38,7 +39,12 @@ impl CreateEmailDbOps for DatabaseConnection {
                     .details
                     .iter()
                     .max_by_key(|x| x.uid)
-                    .unwrap()
+                    .unwrap_or(&EmailDetails {
+                        uid: 0,
+                        subject: "".to_string(),
+                        from: vec!["".to_string()],
+                        date: chrono::Utc::now(),
+                    })
                     .uid;
                 let _: Vec<Record> = db
                     .create(Tables::Mailbox.to_string())
@@ -63,7 +69,12 @@ impl CreateEmailDbOps for DatabaseConnection {
                     .details
                     .iter()
                     .max_by_key(|x| x.uid)
-                    .unwrap()
+                    .unwrap_or(&EmailDetails {
+                        uid: 0,
+                        subject: "".to_string(),
+                        from: vec!["".to_string()],
+                        date: chrono::Utc::now(),
+                    })
                     .uid;
                 let _: Vec<Record> = db
                     .create(Tables::Mailbox.to_string())
