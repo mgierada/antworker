@@ -10,6 +10,7 @@ pub trait GetMailboxDbOps {
     async fn get_mailboxes(&self) -> surrealdb::Result<Vec<MailboxMonthly>>;
     async fn get_mailbox_ids(&self) -> surrealdb::Result<Vec<String>>;
     async fn get_mailbox_id_by_mailbox(&self, mailbox: &str) -> surrealdb::Result<Option<String>>;
+    async fn get_latest_uid_by_mailbox(&self, mailbox: &str) -> surrealdb::Result<Option<u32>>;
 }
 
 impl GetMailboxDbOps for DatabaseConnection {
@@ -49,5 +50,23 @@ impl GetMailboxDbOps for DatabaseConnection {
             .collect::<Vec<String>>()
             .pop();
         Ok(id)
+    }
+
+    async fn get_latest_uid_by_mailbox(&self, mailbox: &str) -> surrealdb::Result<Option<u32>> {
+        let db = connect().await?;
+        let sql = "SELECT * FROM type::table($table) WHERE mailbox = $mailbox;";
+        let mut result = db
+            .query(sql)
+            .bind(("table", Tables::Mailbox.to_string()))
+            .bind(("mailbox", mailbox))
+            .await?;
+        // NOTE This should be a single record
+        let mailbox: Vec<MailboxMonthly> = result.take(0)?;
+        let latest_uid = mailbox
+            .iter()
+            .map(|x| x.latest_uid)
+            .collect::<Vec<u32>>()
+            .pop();
+        Ok(latest_uid)
     }
 }

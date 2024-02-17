@@ -11,6 +11,7 @@ use crate::{
 
 use crate::crud::get_email::GetEmailDbOps;
 use crate::db::connect::DatabaseConnection;
+use std::cmp::max;
 
 use super::get_mailbox::GetMailboxDbOps;
 
@@ -32,7 +33,8 @@ impl CreateEmailDbOps for DatabaseConnection {
     ) -> surrealdb::Result<()> {
         let db = connect().await?;
         let existing_mailbox_id = &self.get_mailbox_id_by_mailbox(&emails.mailbox).await?;
-        let max_uid = emails
+        let existing_max_uid = &self.get_latest_uid_by_mailbox(&emails.mailbox).await?;
+        let current_max_uid = emails
             .clone()
             .details
             .iter()
@@ -51,7 +53,7 @@ impl CreateEmailDbOps for DatabaseConnection {
                     .content(CreateMailboxMonthly {
                         mailbox: emails.mailbox.clone(),
                         updated_at: updated_at.clone(),
-                        latest_uid: max_uid,
+                        latest_uid: max(current_max_uid, existing_max_uid.unwrap_or(0)),
                     })
                     .await?;
             }
@@ -61,7 +63,7 @@ impl CreateEmailDbOps for DatabaseConnection {
                     .content(CreateMailboxMonthly {
                         mailbox: emails.mailbox.clone(),
                         updated_at: updated_at.clone(),
-                        latest_uid: max_uid,
+                        latest_uid: max(current_max_uid, existing_max_uid.unwrap_or(0)),
                     })
                     .await?;
             }
@@ -74,7 +76,6 @@ impl CreateEmailDbOps for DatabaseConnection {
         let existing_email_id = &self
             .get_email_id_for_current_year_month_by_mailbox(&emails.mailbox)
             .await?;
-
         let updated_at = chrono::Local::now().to_rfc3339();
         match existing_email_id {
             Some(existing_email_id) => {
