@@ -109,7 +109,7 @@ enum Commands {
             short,
             long,
             action,
-            help = "Define year and month of interest, e.g. 2024_01"
+            help = "Define year and month of interest, e.g. 2024_01. If not provided, the current year and month will be used"
         )]
         year_month: Option<String>,
         #[arg(help = "Define the action to perform on the database, e.g. get, remove")]

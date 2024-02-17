@@ -3,6 +3,7 @@ pub enum OpenCommand {
     Outcome,
 }
 
+#[derive(Debug)]
 pub enum DbAction {
     GetEmail,
     RemoveEmail,

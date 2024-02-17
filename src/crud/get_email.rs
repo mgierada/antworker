@@ -25,6 +25,7 @@ impl GetEmailDbOps for DatabaseConnection {
     async fn get_emails(&self) -> surrealdb::Result<Vec<EmailMonthly>> {
         let db = connect().await?;
         let emails: Vec<EmailMonthly> = db.select(Tables::Emails.to_string()).await?;
+        dbg!(&emails);
         Ok(emails)
     }
 
