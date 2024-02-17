@@ -86,26 +86,7 @@ impl CreateEmailDbOps for DatabaseConnection {
                         updated_at: updated_at.clone(),
                     })
                     .await?;
-                let max_uid = emails
-                    .clone()
-                    .details
-                    .iter()
-                    .max_by_key(|x| x.uid)
-                    .unwrap_or(&EmailDetails {
-                        uid: 0,
-                        subject: "".to_string(),
-                        from: vec!["".to_string()],
-                        date: chrono::Utc::now(),
-                    })
-                    .uid;
-                let _: Vec<Record> = db
-                    .create(Tables::Mailbox.to_string())
-                    .content(CreateMailboxMonthly {
-                        mailbox: emails.mailbox,
-                        updated_at: updated_at.clone(),
-                        latest_uid: max_uid,
-                    })
-                    .await?;
+                self.store_mailbox_info(&emails, updated_at).await?;
             }
             None => {
                 let _: Vec<Record> = db
@@ -116,26 +97,7 @@ impl CreateEmailDbOps for DatabaseConnection {
                         updated_at: updated_at.clone(),
                     })
                     .await?;
-                let max_uid = emails
-                    .clone()
-                    .details
-                    .iter()
-                    .max_by_key(|x| x.uid)
-                    .unwrap_or(&EmailDetails {
-                        uid: 0,
-                        subject: "".to_string(),
-                        from: vec!["".to_string()],
-                        date: chrono::Utc::now(),
-                    })
-                    .uid;
-                let _: Vec<Record> = db
-                    .create(Tables::Mailbox.to_string())
-                    .content(CreateMailboxMonthly {
-                        mailbox: emails.mailbox,
-                        updated_at: updated_at.clone(),
-                        latest_uid: max_uid,
-                    })
-                    .await?;
+                self.store_mailbox_info(&emails, updated_at).await?;
             }
         }
         Ok(())
