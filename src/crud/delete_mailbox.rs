@@ -12,7 +12,7 @@ pub trait DeleteMailboxDbOps {
 impl DeleteMailboxDbOps for DatabaseConnection {
     async fn remove_mailbox(&self) -> surrealdb::Result<()> {
         let db = connect().await?;
-        let ids_to_remove = &self.get_mailbox_ids_for_current_year_month().await?;
+        let ids_to_remove = &self.get_mailbox_ids().await?;
         for id in ids_to_remove {
             let _deleted_mailbox: Option<MailboxMonthly> =
                 db.delete((Tables::Mailbox.to_string(), id.clone())).await?;

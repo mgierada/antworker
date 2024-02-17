@@ -25,9 +25,8 @@ impl CreateEmailDbOps for DatabaseConnection {
         let existing_email_id = &self
             .get_email_id_for_current_year_month_by_mailbox(&emails.mailbox)
             .await?;
-        let existing_mailbox_id = &self
-            .get_mailbox_id_by_mailbox(&emails.mailbox)
-            .await?;
+        let existing_mailbox_id = &self.get_mailbox_id_by_mailbox(&emails.mailbox).await?;
+
         let updated_at = chrono::Local::now().to_rfc3339();
         match existing_email_id {
             Some(existing_email_id) => {
@@ -54,7 +53,7 @@ impl CreateEmailDbOps for DatabaseConnection {
                 let _: Vec<Record> = db
                     .create(Tables::Mailbox.to_string())
                     .content(CreateMailboxMonthly {
-                        year_month: get_current_year_month_str(),
+                        mailbox: emails.mailbox,
                         updated_at: updated_at.clone(),
                         latest_uid: max_uid,
                     })
@@ -84,7 +83,7 @@ impl CreateEmailDbOps for DatabaseConnection {
                 let _: Vec<Record> = db
                     .create(Tables::Mailbox.to_string())
                     .content(CreateMailboxMonthly {
-                        year_month: get_current_year_month_str(),
+                        mailbox: emails.mailbox,
                         updated_at: updated_at.clone(),
                         latest_uid: max_uid,
                     })
