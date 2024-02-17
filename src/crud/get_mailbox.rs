@@ -48,8 +48,6 @@ impl GetMailboxDbOps for DatabaseConnection {
             .map(|x| x.id.id.to_string())
             .collect::<Vec<String>>()
             .pop();
-        println!("MAILBOX_ID");
-        dbg!(&id);
         Ok(id)
     }
 }
