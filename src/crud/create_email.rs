@@ -12,6 +12,8 @@ use crate::{
 use crate::crud::get_email::GetEmailDbOps;
 use crate::db::connect::DatabaseConnection;
 
+use super::get_mailbox::GetMailboxDbOps;
+
 #[allow(async_fn_in_trait)]
 pub trait CreateEmailDbOps {
     async fn store_emails(&self, emails: Emails) -> surrealdb::Result<()>;
@@ -22,6 +24,9 @@ impl CreateEmailDbOps for DatabaseConnection {
         let db = connect().await?;
         let existing_email_id = &self
             .get_email_id_for_current_year_month_by_mailbox(&emails.mailbox)
+            .await?;
+        let existing_mailbox_id = &self
+            .get_mailbox_id_by_mailbox(&emails.mailbox)
             .await?;
         let updated_at = chrono::Local::now().to_rfc3339();
         match existing_email_id {
