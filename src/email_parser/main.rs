@@ -12,14 +12,14 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
     let db_conn = DatabaseConnection;
     let mut inboxes = HashMap::new();
     let latest_uid_company = db_conn.get_latest_uid_by_mailbox("company").await?;
-    dbg!(&latest_uid_company);
+    let latest_uid_private = db_conn.get_latest_uid_by_mailbox("private").await?;
+    let latest_uid_s = db_conn.get_latest_uid_by_mailbox("s").await?;
     let company_credentials = EmailAccountBuilder::new(
         &COMPANY_EMAIL_SERVER,
         *COMPANY_EMAIL_PORT,
         &COMPANY_EMAIL,
         &COMPANY_EMAIL_PASSWORD,
     )
-    // .uid_set("1:*")
     .uid_set(format!("{}:*", latest_uid_company.unwrap_or(1)).as_str())
     .build();
     let private_credentials = EmailAccountBuilder::new(
@@ -28,7 +28,7 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
         &PRIVATE_EMAIL,
         &PRIVATE_EMAIL_PASSWORD,
     )
-    .uid_set("6000:*")
+    .uid_set(format!("{}:*", latest_uid_private.unwrap_or(1)).as_str())
     .build();
     let s_credentials = EmailAccountBuilder::new(
         &COMPANY_EMAIL_SERVER,
@@ -36,7 +36,7 @@ pub async fn process_emails() -> Result<(), Box<dyn std::error::Error>> {
         &S_EMAIL,
         &S_EMAIL_PASSWORD,
     )
-    .uid_set("1:*")
+    .uid_set(format!("{}:*", latest_uid_s.unwrap_or(1)).as_str())
     .build();
     inboxes.insert("company", company_credentials);
     inboxes.insert("private", private_credentials);
