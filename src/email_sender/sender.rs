@@ -42,7 +42,7 @@ pub fn send_emails(is_dry_run: bool) {
     );
 
     if is_dry_run {
-        dry_run(n_attachments);
+        return dry_run(n_attachments);
     }
 
     attachments.iter().progress_with(pb).for_each(|attachment| {
