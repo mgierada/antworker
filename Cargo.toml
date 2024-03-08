@@ -17,7 +17,7 @@ native-tls = "0.2.11"
 tokio = {version = "1.33.0", features = ["full"]}
 quoted_printable = "0.5.0"
 mailparse = "0.14.0"
-base64 = "0.21.5"
+base64 = "0.22.0"
 chrono = { version = "0.4.31", features = ["serde"] }
 clap = {version = "4.4.11", features = ["derive"] }
 lettre = "0.11.3"
