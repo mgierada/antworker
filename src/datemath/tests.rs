@@ -1,6 +1,6 @@
 use crate::datemath::date::{
-    get_current_month_str, get_current_month_year, get_current_year_month_str, get_current_year_str,
-    get_previous_month_year, get_previous_month_year_str,
+    get_current_month_str, get_current_month_year, get_current_year_month_str,
+    get_current_year_str, get_previous_month_year, get_previous_month_year_str,
 };
 use chrono::{DateTime, Datelike, Duration, Utc};
 
@@ -76,10 +76,10 @@ fn test_get_current_year_month_str_format() {
 fn test_month_formats_consistency() {
     let month_str = get_current_month_str();
     let (_year, month) = get_current_month_year().unwrap();
-    
+
     // Month string should be zero-padded 2 digits
     assert_eq!(month_str.len(), 2);
-    
+
     // Month string should match the month from get_current_month_year
     let expected_month_str = format!("{:02}", month);
     assert_eq!(month_str, expected_month_str);
@@ -89,10 +89,10 @@ fn test_month_formats_consistency() {
 fn test_year_formats_consistency() {
     let year_str = get_current_year_str();
     let (year, _) = get_current_month_year().unwrap();
-    
+
     // Year string should be 4 digits
     assert_eq!(year_str.len(), 4);
-    
+
     // Year string should match the year from get_current_month_year
     assert_eq!(year_str, year.to_string());
 }
@@ -102,13 +102,13 @@ fn test_previous_month_boundary() {
     // Test that previous month calculation is consistent
     let (prev_year, prev_month) = get_previous_month_year();
     let (prev_month_str, prev_year_str) = get_previous_month_year_str();
-    
+
     // Verify consistency between the two functions
     assert_eq!(prev_year.to_string(), prev_year_str);
     assert_eq!(format!("{:02}", prev_month), prev_month_str);
-    
+
     // Verify month is in valid range
-    assert!(prev_month >= 1 && prev_month <= 12);
+    assert!((1..=12).contains(&prev_month));
 }
 
 #[test]
@@ -117,6 +117,6 @@ fn test_current_month_year_returns_some() {
     assert!(result.is_some());
     let (year, month) = result.unwrap();
     // Verify reasonable ranges
-    assert!(year >= 2020 && year <= 2100);
-    assert!(month >= 1 && month <= 12);
+    assert!((2020..=2100).contains(&year));
+    assert!((1..=12).contains(&month));
 }

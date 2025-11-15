@@ -44,16 +44,19 @@ fn test_new_with_different_ports() {
 
 #[test]
 fn test_uid_set_with_various_patterns() {
-    let builder1 = EmailAccountBuilder::new("smtp.example.com", 587, "user@example.com", "password")
-        .uid_set("1:10");
+    let builder1 =
+        EmailAccountBuilder::new("smtp.example.com", 587, "user@example.com", "password")
+            .uid_set("1:10");
     assert_eq!(builder1.uid_set, "1:10");
 
-    let builder2 = EmailAccountBuilder::new("smtp.example.com", 587, "user@example.com", "password")
-        .uid_set("50:*");
+    let builder2 =
+        EmailAccountBuilder::new("smtp.example.com", 587, "user@example.com", "password")
+            .uid_set("50:*");
     assert_eq!(builder2.uid_set, "50:*");
 
-    let builder3 = EmailAccountBuilder::new("smtp.example.com", 587, "user@example.com", "password")
-        .uid_set("100");
+    let builder3 =
+        EmailAccountBuilder::new("smtp.example.com", 587, "user@example.com", "password")
+            .uid_set("100");
     assert_eq!(builder3.uid_set, "100");
 }
 
@@ -82,8 +85,9 @@ fn test_default_implementation() {
 
 #[test]
 fn test_clone_equality() {
-    let builder1 = EmailAccountBuilder::new("smtp.example.com", 587, "user@example.com", "password")
-        .uid_set("100:200");
+    let builder1 =
+        EmailAccountBuilder::new("smtp.example.com", 587, "user@example.com", "password")
+            .uid_set("100:200");
     let builder2 = builder1.clone();
 
     assert_eq!(builder1, builder2);

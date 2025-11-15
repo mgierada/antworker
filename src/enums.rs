@@ -28,15 +28,15 @@ mod tests {
         let get_email = DbAction::GetEmail;
         let debug_str = format!("{:?}", get_email);
         assert_eq!(debug_str, "GetEmail");
-        
+
         let remove_email = DbAction::RemoveEmail;
         let debug_str = format!("{:?}", remove_email);
         assert_eq!(debug_str, "RemoveEmail");
-        
+
         let get_mailbox = DbAction::GetMailbox;
         let debug_str = format!("{:?}", get_mailbox);
         assert_eq!(debug_str, "GetMailbox");
-        
+
         let remove_mailbox = DbAction::RemoveMailbox;
         let debug_str = format!("{:?}", remove_mailbox);
         assert_eq!(debug_str, "RemoveMailbox");
