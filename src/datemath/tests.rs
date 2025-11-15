@@ -1,6 +1,6 @@
 use crate::datemath::date::{
-    get_current_month_str, get_current_month_year, get_current_year_str, get_previous_month_year,
-    get_previous_month_year_str,
+    get_current_month_str, get_current_month_year, get_current_year_month_str, get_current_year_str,
+    get_previous_month_year, get_previous_month_year_str,
 };
 use chrono::{DateTime, Datelike, Duration, Utc};
 
@@ -48,4 +48,12 @@ fn test_get_previous_month_year_str() {
     let expected_year_str = previous_year.to_string();
     assert_eq!(previous_month_str, expected_month_str);
     assert_eq!(previous_year_str, expected_year_str);
+}
+
+#[test]
+fn test_get_current_year_month_str() {
+    let current_year_month = get_current_year_month_str();
+    let now: DateTime<Utc> = Utc::now();
+    let expected_year_month = now.format("%Y_%m").to_string();
+    assert_eq!(current_year_month, expected_year_month);
 }

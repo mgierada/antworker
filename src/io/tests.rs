@@ -3,10 +3,10 @@ use std::fs;
 use lazy_static::lazy_static;
 
 use crate::{
-    datemath::date::{get_current_month_str, get_current_year_str, get_previous_month_year_str},
+    datemath::date::{get_current_month_str, get_current_year_str, get_current_year_month_str, get_previous_month_year_str},
     io::{
         files::get_saved_files,
-        save_location::{get_save_location_income_invoices, get_save_location_monthly_balance, get_save_location_outcome_invoices},
+        save_location::{get_save_location_income_invoices, get_save_location_monthly_balance, get_save_location_outcome_invoices, maybe_create_save_location},
     },
 };
 
@@ -105,4 +105,59 @@ fn test_get_save_location_monthly_balance() {
         previous_month.as_str()
     );
     assert_eq!(save_location, expected_save_location);
+}
+
+#[test]
+fn test_maybe_create_save_location_new_directory() {
+    let temp_dir_path = TEMP_DIR.path().to_str().unwrap().to_string();
+    let new_dir = format!("{}/new_test_dir", temp_dir_path);
+    
+    // Ensure the directory doesn't exist
+    let _ = fs::remove_dir_all(&new_dir);
+    
+    // Test creating a new directory
+    let result = maybe_create_save_location(&new_dir);
+    assert!(result.is_ok());
+    assert!(fs::metadata(&new_dir).is_ok());
+    
+    // Cleanup
+    let _ = fs::remove_dir_all(&new_dir);
+}
+
+#[test]
+fn test_maybe_create_save_location_existing_directory() {
+    let temp_dir_path = TEMP_DIR.path().to_str().unwrap().to_string();
+    let existing_dir = format!("{}/existing_test_dir", temp_dir_path);
+    
+    // Create the directory first
+    fs::create_dir_all(&existing_dir).unwrap();
+    
+    // Test with existing directory (should not error)
+    let result = maybe_create_save_location(&existing_dir);
+    assert!(result.is_ok());
+    assert!(fs::metadata(&existing_dir).is_ok());
+    
+    // Cleanup
+    let _ = fs::remove_dir_all(&existing_dir);
+}
+
+#[test]
+fn test_get_save_location_outcome_with_year_month() {
+    std::env::set_var(
+        "ROOT_SAVE_LOCATION_OUTCOME_INVOICES",
+        TEMP_DIR.path().to_str().unwrap().to_string(),
+    );
+    
+    let save_location = get_save_location_outcome_invoices();
+    let current_year = get_current_year_str();
+    let current_year_month = get_current_year_month_str();
+    
+    assert!(save_location.contains(&current_year));
+    assert!(save_location.contains(&current_year_month));
+    let expected_format = format!("{}/{}/{}", 
+        TEMP_DIR.path().to_str().unwrap(),
+        current_year,
+        current_year_month
+    );
+    assert_eq!(save_location, expected_format);
 }
