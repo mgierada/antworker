@@ -118,3 +118,74 @@ pub fn parse_date(date_str: &str) -> DateTime<Utc> {
         });
     date
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{Datelike, Timelike};
+
+    #[test]
+    fn test_parse_date_rfc2822() {
+        let date_str = "Mon, 15 Nov 2021 10:30:00 +0000";
+        let parsed = parse_date(date_str);
+        assert_eq!(parsed.year(), 2021);
+        assert_eq!(parsed.month(), 11);
+        assert_eq!(parsed.day(), 15);
+        assert_eq!(parsed.hour(), 10);
+        assert_eq!(parsed.minute(), 30);
+    }
+
+    #[test]
+    fn test_parse_date_rfc2822_with_offset() {
+        let date_str = "Wed, 25 Dec 2024 14:45:30 -0500";
+        let parsed = parse_date(date_str);
+        assert_eq!(parsed.year(), 2024);
+        assert_eq!(parsed.month(), 12);
+        assert_eq!(parsed.day(), 25);
+        // Note: Time will be adjusted to UTC
+        assert_eq!(parsed.hour(), 19); // 14:45 - 5 hours = 19:45 UTC
+        assert_eq!(parsed.minute(), 45);
+    }
+
+    #[test]
+    fn test_parse_date_invalid_fallback_to_current() {
+        let date_str = "invalid date string";
+        let parsed = parse_date(date_str);
+        let now = Utc::now();
+        // Should be close to current time (within a few seconds)
+        let diff = (parsed - now).num_seconds().abs();
+        assert!(diff < 5, "Parsed date should be close to current time");
+    }
+
+    #[test]
+    fn test_parse_date_empty_string() {
+        let date_str = "";
+        let parsed = parse_date(date_str);
+        let now = Utc::now();
+        let diff = (parsed - now).num_seconds().abs();
+        assert!(diff < 5, "Empty date string should fallback to current time");
+    }
+
+    #[test]
+    fn test_email_details_default() {
+        let email = EmailDetails::default();
+        assert_eq!(email.subject, "");
+        assert_eq!(email.from.len(), 0);
+        assert_eq!(email.uid, 0);
+    }
+
+    #[test]
+    fn test_email_details_clone() {
+        let email = EmailDetails {
+            subject: "Test Subject".to_string(),
+            from: vec!["test@example.com".to_string()],
+            date: Utc::now(),
+            uid: 123,
+        };
+        let cloned = email.clone();
+        assert_eq!(email.subject, cloned.subject);
+        assert_eq!(email.from, cloned.from);
+        assert_eq!(email.date, cloned.date);
+        assert_eq!(email.uid, cloned.uid);
+    }
+}
